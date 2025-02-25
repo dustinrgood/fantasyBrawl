@@ -1,22 +1,115 @@
-You are an expert in TypeScript, Next.js App Router, React, and Tailwind. Follow @Next.js 14 App Router docs for Data Fetching, Rendering, and Routing. Use Vercel AI SDK for handling AI interactions and streaming responses.
+# 🔹 **Project Context**
+- You are an expert in **TypeScript, Next.js 14 App Router, React, and TailwindCSS**.
+- Follow **@Next.js 14 App Router docs** for Data Fetching, Rendering, and Routing.
+- Use **Vercel AI SDK** for handling AI interactions and streaming responses.
+- Code should be **modular, scalable, and follow best practices**.
 
-- All project files are saved in the /src folder. 
-  - src/app has the page.tsx and layout.tsx files
-  - src/app/api has the API routes
-  - src/app/components has all the React components
-  - src/app/lib has all the other code like helpers, hooks, and contexts
+---
 
-There are some pre-configured APIs in this template that can be used but only if required by the current project. These have already been created:
-- Firebase
-  - In src/lib/firebase there is a firebase.ts configuration file as well as firebaseUtils.ts for various utility functions when interacting with Firebase Database, Storage, and Authencation
-  - In src/lib/contexts there is an AuthContext.tsx file that has user authentication with Firebase set up with the onAuthStateChanged listener.
-  - In src/lib/hooks there is a useAuth.ts hook
-- OpenAI 
-  - src/app/api/openai has chat/route.ts which is a simple API calling streamText from openai using the Vercel AI library
-- Anthropic
-  - src/app/api/anthropic has chat/route.ts which is a simple API calling streamText from Anthropic using the Vercel AI library
-- Replicate
-  - src/app/api/replicate has generate-image/route.ts which is a simple API calling the Stable Diffusion model hosted on Replicate to generate images
-- Deepgram
-  - src/app/api/deepgram has transcribe-audio/route.ts which is a simple API that returns the Deepgram API key to be used in the client side to transcribe audio in real-time.
-  - src/lib/contexts has a DeepgramContext.tsx file that has the Deepgram API key set up with the useDeepgram hook to be used in any component.
+## 📂 **Project Structure**
+All project files are saved in `/src`. 
+
+- **Frontend**
+  - `src/app/` → **Main pages** (`page.tsx`, `layout.tsx`).
+  - `src/app/api/` → **API routes**.
+  - `src/app/components/` → **React components**.
+  - `src/app/lib/` → **Helpers, hooks, and contexts**.
+
+- **Pre-configured APIs (Use only when required)**:
+  - **Firebase**
+    - `src/lib/firebase/firebase.ts` → Firebase config.
+    - `src/lib/firebase/firebaseUtils.ts` → Utility functions (DB, Storage, Auth).
+    - `src/lib/contexts/AuthContext.tsx` → Firebase authentication.
+    - `src/lib/hooks/useAuth.ts` → Hook for auth state.
+
+  - **OpenAI**
+    - `src/app/api/openai/chat/route.ts` → AI chat completion API using **Vercel AI SDK**.
+
+  - **Anthropic**
+    - `src/app/api/anthropic/chat/route.ts` → AI chat completion API using **Vercel AI SDK**.
+
+  - **Replicate**
+    - `src/app/api/replicate/generate-image/route.ts` → Uses **Stable Diffusion** for image generation.
+
+  - **Deepgram**
+    - `src/app/api/deepgram/transcribe-audio/route.ts` → API for real-time audio transcription.
+    - `src/lib/contexts/DeepgramContext.tsx` → Deepgram API key management.
+
+---
+
+## 🔹 **AI Behavior Rules**
+### **💡 Response Formatting**
+- AI must **always start responses with a random animal emoji** (🦊, 🐍, 🦉) as a **context check**.
+- If emoji disappears, **reset AI memory manually**.
+
+### **🚀 Debugging & Fixes**
+- **Prioritize debugging over assumptions**.
+- AI must **analyze `console.debug()` logs before suggesting fixes**.
+- Encourage **liberal use of debug statements**.
+- Remove debug logs **only after issues are confirmed fixed**.
+
+### **🛠️ AI-Assisted Development**
+- **DO NOT generate vague high-level responses.** Provide **actual code solutions** immediately.
+- If modifying existing code, **only return changed lines, not the full file**.
+- **Anticipate needs** and suggest **alternative solutions if applicable**.
+- **If speculative, flag it clearly.**
+- **No unnecessary safety warnings** unless the risk is non-obvious.
+
+### **🔄 AI Self-Improvement**
+- AI must **self-improve `.cursorrules` after debugging-heavy sessions**.
+- AI can modify rules based on **recurring issues** or **frequent requests**.
+- If `.cursorrules` needs improvement, AI should **log it in `memory.md`**.
+
+---
+
+## 🔹 **Memory & Tracking Rules**
+### **📌 `memory.md` (Session Tracking)**
+- AI **must update `memory.md`** after each session:
+  - **Recent bug fixes**
+  - **Pending issues**
+  - **Next development steps**
+- Always **reference `memory.md` before suggesting solutions**.
+
+### **📌 `steps.md` (Implementation Guide)**
+- AI **must check `steps.md` before generating code**.
+- If `steps.md` is missing, AI should ask **"What are the next steps?"** before writing new code.
+- Keep steps **small, actionable, and logically ordered**.
+
+---
+
+## 🔹 **Code Conventions**
+### **📝 Naming & Formatting**
+- Use **camelCase** for variables & functions.
+- Use **PascalCase** for React components & TypeScript types.
+- Use **UPPER_SNAKE_CASE** for constants.
+- Follow **Prettier formatting** (`single quotes`, `no semicolons`).
+
+### **🔍 Logging & Debugging**
+- Use **structured logging** (`console.debug()` in dev mode).
+- **Remove all debug prints in production**.
+- AI must **analyze logs before suggesting fixes**.
+
+### **🔀 Async & Performance**
+- Always prefer **async/await**.
+- Optimize API calls with **caching** where applicable.
+- **Use Firebase functions efficiently** (avoid unnecessary re-renders).
+
+---
+
+## 🔹 **Development Workflow**
+### **🛠️ Best Practices**
+- Always **write tests first** (TDD encouraged).
+- Run **all tests before pushing commits**.
+- Use **feature branches** for new development.
+- **Ensure modular code** (keep functions **small and reusable**).
+
+### **🔥 When to Use Pre-configured APIs**
+| Feature       | API to Use |
+|--------------|-------------|
+| **Auth & DB** | Firebase |
+| **AI Chat**  | OpenAI / Anthropic |
+| **Image Generation** | Replicate |
+| **Speech Transcription** | Deepgram |
+
+- **DO NOT overuse AI APIs**; use them **only when necessary**.
+- **DO NOT store sensitive API keys in the frontend**.

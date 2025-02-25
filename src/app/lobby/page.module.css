@@ -1,0 +1,268 @@
+/* Lobby Page Styles */
+.container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.searchContainer {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .searchForm {
+    flex-direction: row;
+  }
+}
+
+.searchInput {
+  position: relative;
+  flex-grow: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.filterContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .filterContainer {
+    flex-direction: row;
+  }
+}
+
+.filterGroup {
+  min-width: 150px;
+}
+
+.filterLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.select {
+  width: 100%;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background-color: white;
+}
+
+.filterButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background-color: white;
+  cursor: pointer;
+}
+
+.filterButton:hover {
+  background-color: #f9fafb;
+}
+
+.leagueList {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.leagueItem {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.leagueHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+@media (min-width: 640px) {
+  .leagueHeader {
+    align-items: center;
+  }
+}
+
+.leagueInfo {
+  display: flex;
+  align-items: center;
+}
+
+.leagueIcon {
+  width: 3rem;
+  height: 3rem;
+  background-color: #e0e7ff;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.leagueDetails {
+  margin-left: 1rem;
+}
+
+.leagueName {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.leagueMeta {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.metaIcon {
+  margin-right: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.metaSeparator {
+  margin: 0 0.5rem;
+  color: #9ca3af;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .actionButtons {
+    margin-top: 0;
+  }
+}
+
+.viewButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background-color: white;
+  text-decoration: none;
+}
+
+.viewButton:hover {
+  background-color: #f9fafb;
+}
+
+.challengeButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  background-color: #4f46e5;
+  text-decoration: none;
+}
+
+.challengeButton:hover {
+  background-color: #4338ca;
+}
+
+.disabledButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.leagueFooter {
+  margin-top: 1rem;
+}
+
+.footerInfo {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.compatible {
+  color: #047857;
+  font-weight: 500;
+}
+
+.incompatible {
+  color: #b91c1c;
+  font-weight: 500;
+} 
