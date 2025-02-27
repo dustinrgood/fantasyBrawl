@@ -1,6 +1,6 @@
 import AppNavbar from '../../components/AppNavbar'
 import Link from 'next/link'
-import { Plus, Eye, MessageSquare, Check, X } from 'lucide-react'
+import { Plus, Eye, MessageSquare, Check, X, Users } from 'lucide-react'
 
 export default function ChallengesPage() {
   return (
@@ -58,14 +58,21 @@ export default function ChallengesPage() {
             
             <div className="flex flex-wrap gap-3">
               <Link 
-                href="/challenges/1" 
+                href="/challenges/challenge-1" 
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </Link>
               <Link 
-                href="/challenges/1/trash-talk" 
+                href="/challenges/challenge-1/matchups" 
+                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                View Matchups
+              </Link>
+              <Link 
+                href="/challenges/challenge-1/trash-talk" 
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
