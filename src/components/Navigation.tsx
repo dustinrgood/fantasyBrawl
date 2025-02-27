@@ -1,11 +1,14 @@
+// src/components/Navigation.tsx
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, Trophy } from 'lucide-react'
+import { Menu, X, Trophy, User, LogIn } from 'lucide-react'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { user, loading } = useAuth()
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -27,8 +30,11 @@ export default function Navigation() {
               <Link href="/dashboard" className="app-nav-link">
                 Dashboard
               </Link>
-              <Link href="/leagues" className="app-nav-link">
+              <Link href="/leagues/my" className="app-nav-link">
                 My Leagues
+              </Link>
+              <Link href="/leagues/public" className="app-nav-link">
+                Public Leagues
               </Link>
               <Link href="/challenges" className="app-nav-link">
                 Challenges
@@ -36,6 +42,20 @@ export default function Navigation() {
               <Link href="/lobby" className="app-nav-link">
                 Challenge Lobby
               </Link>
+              
+              {!loading && (
+                user ? (
+                  <Link href="/profile" className="app-nav-link flex items-center">
+                    <User className="h-4 w-4 mr-1" />
+                    Profile
+                  </Link>
+                ) : (
+                  <Link href="/login" className="app-nav-link flex items-center">
+                    <LogIn className="h-4 w-4 mr-1" />
+                    Sign In
+                  </Link>
+                )
+              )}
             </div>
           </div>
 
@@ -63,11 +83,18 @@ export default function Navigation() {
               Dashboard
             </Link>
             <Link 
-              href="/leagues" 
+              href="/leagues/my" 
               className="app-mobile-nav-link"
               onClick={() => setIsMenuOpen(false)}
             >
               My Leagues
+            </Link>
+            <Link 
+              href="/leagues/public" 
+              className="app-mobile-nav-link"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Public Leagues
             </Link>
             <Link 
               href="/challenges" 
@@ -83,9 +110,31 @@ export default function Navigation() {
             >
               Challenge Lobby
             </Link>
+            
+            {!loading && (
+              user ? (
+                <Link 
+                  href="/profile" 
+                  className="app-mobile-nav-link flex items-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <User className="h-5 w-5 mr-2" />
+                  Profile
+                </Link>
+              ) : (
+                <Link 
+                  href="/login" 
+                  className="app-mobile-nav-link flex items-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <LogIn className="h-5 w-5 mr-2" />
+                  Sign In
+                </Link>
+              )
+            )}
           </div>
         </div>
       )}
     </nav>
   )
-} 
+}
