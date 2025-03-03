@@ -1,6 +1,5 @@
-import Navigation from '@/components/Navigation'
 import ImportedYahooLeagues from '@/components/ImportedYahooLeagues'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Activity } from 'lucide-react'
 import Link from 'next/link'
 
 export const metadata = {
@@ -11,7 +10,6 @@ export const metadata = {
 export default function MyLeaguesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
       <div className="container-default py-8">
         <div className="mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
@@ -21,12 +19,19 @@ export default function MyLeaguesPage() {
                 View and manage your imported fantasy leagues
               </p>
             </div>
-            <div className="mt-4 md:mt-0">
+            <div className="mt-4 md:mt-0 space-x-2">
               <Link 
                 href="/leagues/public" 
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
               >
                 Browse Public Leagues
+              </Link>
+              <Link 
+                href="/leagues/nba-public" 
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <Activity className="h-4 w-4 mr-1" />
+                NBA Leagues
               </Link>
             </div>
           </div>

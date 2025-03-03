@@ -1,12 +1,3 @@
-# Ansh & Riley Full-Stack Template
-
-This is a full-stack template project for Software Composers to create applications with AI.
-
-## Getting started
-To create a new project, you go to `/paths`, choose from our list of Paths, and then use Cursor's Composer feature to quickly scaffold your project!
-
-You can also edit the Path's prompt template to be whatever you like!
-
 ## Features
 
 ### Yahoo Fantasy Integration
@@ -40,9 +31,28 @@ To start the development server with HTTPS:
 npm run dev
 ```
 
-## Technologies used
-This doesn't really matter, but is useful for the AI to understand more about this project. We are using the following technologies
-- React with Next.js 14 App Router
-- TailwindCSS
-- Firebase Auth, Storage, and Database
-- Multiple AI endpoints including OpenAI, Anthropic, and Replicate using Vercel's AI SDK
+### Replicate Image Generation
+This application integrates with Replicate for AI-powered image generation:
+- Generate custom images that match your trash talk messages
+- Uses a two-step process with language models to optimize prompts
+- Creates high-quality, contextual images using Stable Diffusion XL
+- Seamlessly integrates with the trash talk feature
+
+To use the Replicate integration:
+1. Create an account at https://replicate.com/ and get your API key
+2. Add your API key to `.env.local`:
+   ```
+   REPLICATE_API_KEY=your_api_key_here
+   ```
+3. Use the "Generate Matching Image" option in the voice-powered trash talk feature
+
+## Technologies Used
+- **Next.js 14**: React framework with App Router for server-side rendering and routing
+- **TypeScript**: For type-safe code
+- **TailwindCSS**: For responsive UI design
+- **Firebase**: Authentication, Firestore database, and Storage
+- **Yahoo Fantasy API**: For fantasy sports data integration
+- **OpenAI API**: For AI-powered trash talk generation
+- **Replicate API**: For AI image generation and prompt optimization
+- **Deepgram API**: For voice transcription
+- **Eleven Labs API**: For AI voice synthesis and text-to-speech

@@ -1,3 +1,4 @@
+// server.js
 const { createServer } = require('https');
 const { parse } = require('url');
 const next = require('next');
@@ -45,11 +46,24 @@ app.prepare().then(() => {
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
       res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
       
-      // Make sure CSS files are served with the correct content type
+      // Enhanced CSS handling
       if (parsedUrl.pathname.endsWith('.css')) {
+        console.log('CSS file requested:', parsedUrl.pathname);
         res.setHeader('Content-Type', 'text/css');
       }
       
+      // Handle specific TailwindCSS file paths with more detailed logging
+      if (
+        parsedUrl.pathname.includes('/_next/static/css/') ||
+        parsedUrl.pathname.includes('/_next/static/chunks/')
+      ) {
+        console.log('Next.js CSS/chunk file requested:', parsedUrl.pathname);
+        res.setHeader('Content-Type', 'text/css');
+      }
+      
+      // Log requests for debugging
+      console.log(`${req.method} ${parsedUrl.pathname}`);
+
       // Handle all requests with Next.js
       await handle(req, res, parsedUrl);
     } catch (err) {
@@ -60,5 +74,6 @@ app.prepare().then(() => {
   }).listen(PORT, (err) => {
     if (err) throw err;
     console.log(`> Ready on https://localhost:${PORT}`);
+    console.log('> Tailwind CSS should be loaded from /_next/static/css/ directory');
   });
-}); 
+});

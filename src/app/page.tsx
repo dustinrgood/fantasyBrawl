@@ -1,13 +1,10 @@
+// src/app/page.tsx
 import Link from 'next/link'
-import AppNavbar from '../components/AppNavbar'
 import { Trophy, Users, MessageSquare } from 'lucide-react'
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <AppNavbar />
-      
       {/* Hero Section */}
       <div className="bg-indigo-600 text-white py-16">
         <div className="max-w-7xl mx-auto px-4">
@@ -18,7 +15,7 @@ export default function Home() {
               <Link href="/dashboard" className="inline-flex items-center justify-center px-4 py-2 bg-white text-indigo-600 hover:bg-gray-100 text-sm font-medium rounded-md shadow-sm">
                 Get Started
               </Link>
-              <Link href="/lobby" className="inline-flex items-center justify-center px-4 py-2 bg-transparent text-white border border-white hover:bg-indigo-700 text-sm font-medium rounded-md shadow-sm">
+              <Link href="/lobby" className="inline-flex items-center justify-center px-4 py-2 border border-white text-white hover:bg-indigo-700 text-sm font-medium rounded-md shadow-sm">
                 Find Challenges
               </Link>
             </div>

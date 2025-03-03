@@ -3,76 +3,96 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import ConnectYahooButton from '@/components/ConnectYahooButton'
 
-export default function YahooAuthErrorPage() {
+export default function YahooErrorPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [errorMessage, setErrorMessage] = useState('')
-  const [errorDetails, setErrorDetails] = useState('')
-
+  const [error, setError] = useState<string>('Unknown error')
+  const [description, setDescription] = useState<string>('An error occurred during Yahoo authentication.')
+  
   useEffect(() => {
-    // Get error from URL
-    const error = searchParams.get('error')
-    const description = searchParams.get('description')
+    // Get error details from URL parameters
+    const errorParam = searchParams.get('error')
+    const descriptionParam = searchParams.get('description')
     
-    // Map error codes to user-friendly messages
-    const errorMessages: Record<string, string> = {
-      'access_denied': 'You denied access to your Yahoo Fantasy account.',
-      'missing_params': 'Required parameters were missing from the Yahoo response.',
-      'invalid_state': 'Security verification failed. Please try again.',
-      'invalid_request': 'The request to Yahoo was invalid. Please try again.',
-      'default': 'An unexpected error occurred while connecting to Yahoo Fantasy.'
+    if (errorParam) {
+      setError(errorParam)
     }
     
-    setErrorMessage(errorMessages[error || ''] || errorMessages.default)
-    
-    if (description) {
-      setErrorDetails(description)
+    if (descriptionParam) {
+      setDescription(descriptionParam)
+    } else {
+      // Set default descriptions based on error type
+      switch (errorParam) {
+        case 'missing_params':
+          setDescription('Required parameters were missing from the Yahoo callback.')
+          break
+        case 'invalid_state':
+          setDescription('Security validation failed. Please try again.')
+          break
+        case 'state_mismatch':
+          setDescription('Security token mismatch. Please try again.')
+          break
+        case 'token_exchange_failed':
+          setDescription('Failed to exchange authorization code for tokens.')
+          break
+        case 'token_storage_failed':
+          setDescription('Failed to store authentication tokens.')
+          break
+        case 'missing_credentials':
+          setDescription('Yahoo API credentials are not properly configured.')
+          break
+        default:
+          setDescription('An error occurred during Yahoo authentication.')
+      }
     }
   }, [searchParams])
-
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-md">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Connection Failed
-          </h2>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+        </div>
+        
+        <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Authentication Failed</h2>
+        
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <h3 className="font-medium text-red-800 mb-1">Error: {error}</h3>
+          <p className="text-red-700">{description}</p>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <ConnectYahooButton />
+          </div>
           
-          <div className="mt-8">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <p className="mt-4 text-lg text-gray-600">
-              Failed to connect to Yahoo Fantasy
-            </p>
-            <p className="mt-2 text-sm text-red-500">
-              {errorMessage}
-            </p>
+          <div className="flex justify-between">
+            <Link
+              href="/profile"
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+            >
+              Back to Profile
+            </Link>
             
-            {errorDetails && (
-              <p className="mt-2 text-xs text-gray-500 break-words">
-                Details: {errorDetails}
-              </p>
-            )}
-            
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              >
-                Return to Dashboard
-              </button>
-              
-              <Link
-                href="/profile"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              >
-                Try Again
-              </Link>
-            </div>
+            <Link
+              href="/dashboard"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              Go to Dashboard
+            </Link>
+          </div>
+          
+          <div className="text-center mt-6">
+            <Link
+              href="/auth/yahoo-debug"
+              className="text-sm text-indigo-600 hover:text-indigo-800"
+            >
+              View Debug Information
+            </Link>
           </div>
         </div>
       </div>

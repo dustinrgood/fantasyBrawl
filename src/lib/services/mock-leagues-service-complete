@@ -1,0 +1,385 @@
+import { League } from '@/lib/types/fantasy';
+
+// Mock data for public leagues
+const mockPublicLeagues: League[] = [
+  {
+    id: 'mock-league-1',
+    name: 'Fantasy Football Heroes',
+    description: 'A competitive league for serious fantasy football players',
+    sport: 'football',
+    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
+    createdBy: 'user-123',
+    managerIds: ['manager-1', 'manager-2', 'manager-3', 'manager-4', 'manager-5', 'manager-6', 'manager-7', 'manager-8', 'manager-9', 'manager-10'],
+    rosterSpots: [
+      { position: 'QB', count: 1 },
+      { position: 'WR', count: 3 },
+      { position: 'RB', count: 2 },
+      { position: 'TE', count: 1 },
+      { position: 'K', count: 1 },
+      { position: 'DEF', count: 1 },
+      { position: 'BN', count: 6 }
+    ],
+    scoringSystem: {
+      type: 'halfPpr',
+      rules: {
+        'passingYards': 0.04,
+        'passingTD': 4,
+        'rushingYards': 0.1,
+        'rushingTD': 6,
+        'reception': 0.5,
+        'receivingYards': 0.1,
+        'receivingTD': 6
+      }
+    },
+    isPublic: true,
+    currentRecord: {
+      wins: 8,
+      losses: 4,
+      ties: 0
+    }
+  },
+  {
+    id: 'mock-league-2',
+    name: 'Touchdown Titans',
+    description: 'Casual fantasy football league for friends and family',
+    sport: 'football',
+    createdAt: Date.now() - 60 * 24 * 60 * 60 * 1000, // 60 days ago
+    createdBy: 'user-456',
+    managerIds: ['manager-11', 'manager-12', 'manager-13', 'manager-14', 'manager-15', 'manager-16', 'manager-17', 'manager-18', 'manager-19', 'manager-20'],
+    rosterSpots: [
+      { position: 'QB', count: 1 },
+      { position: 'WR', count: 2 },
+      { position: 'RB', count: 2 },
+      { position: 'TE', count: 1 },
+      { position: 'FLEX', count: 1 },
+      { position: 'K', count: 1 },
+      { position: 'DEF', count: 1 },
+      { position: 'BN', count: 5 }
+    ],
+    scoringSystem: {
+      type: 'standard',
+      rules: {
+        'passingYards': 0.04,
+        'passingTD': 4,
+        'rushingYards': 0.1,
+        'rushingTD': 6,
+        'reception': 0,
+        'receivingYards': 0.1,
+        'receivingTD': 6
+      }
+    },
+    isPublic: true,
+    currentRecord: {
+      wins: 6,
+      losses: 6,
+      ties: 0
+    }
+  },
+  {
+    id: 'mock-league-3',
+    name: 'Gridiron Gladiators',
+    description: 'Intense competition with unique scoring rules',
+    sport: 'football',
+    createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000, // 15 days ago
+    createdBy: 'user-789',
+    managerIds: ['manager-21', 'manager-22', 'manager-23', 'manager-24', 'manager-25', 'manager-26', 'manager-27', 'manager-28', 'manager-29', 'manager-30', 'manager-31', 'manager-32'],
+    rosterSpots: [
+      { position: 'QB', count: 1 },
+      { position: 'WR', count: 3 },
+      { position: 'RB', count: 2 },
+      { position: 'TE', count: 1 },
+      { position: 'FLEX', count: 2 },
+      { position: 'K', count: 1 },
+      { position: 'DEF', count: 1 },
+      { position: 'BN', count: 7 }
+    ],
+    scoringSystem: {
+      type: 'ppr',
+      rules: {
+        'passingYards': 0.04,
+        'passingTD': 4,
+        'rushingYards': 0.1,
+        'rushingTD': 6,
+        'reception': 1,
+        'receivingYards': 0.1,
+        'receivingTD': 6
+      }
+    },
+    isPublic: true,
+    currentRecord: {
+      wins: 10,
+      losses: 2,
+      ties: 0
+    }
+  },
+  {
+    id: 'mock-league-4',
+    name: 'Fantasy Basketball Champions',
+    description: 'Premier basketball fantasy league with head-to-head scoring',
+    sport: 'basketball',
+    createdAt: Date.now() - 45 * 24 * 60 * 60 * 1000, // 45 days ago
+    createdBy: 'user-101',
+    managerIds: ['manager-33', 'manager-34', 'manager-35', 'manager-36', 'manager-37', 'manager-38', 'manager-39', 'manager-40', 'manager-41', 'manager-42'],
+    rosterSpots: [
+      { position: 'PG', count: 1 },
+      { position: 'SG', count: 1 },
+      { position: 'SF', count: 1 },
+      { position: 'PF', count: 1 },
+      { position: 'C', count: 1 },
+      { position: 'G', count: 1 },
+      { position: 'F', count: 1 },
+      { position: 'UTIL', count: 3 },
+      { position: 'BN', count: 5 }
+    ],
+    scoringSystem: {
+      type: 'custom',
+      rules: {
+        'points': 1,
+        'rebounds': 1.2,
+        'assists': 1.5,
+        'steals': 3,
+        'blocks': 3,
+        'turnovers': -1
+      }
+    },
+    isPublic: true,
+    currentRecord: {
+      wins: 7,
+      losses: 5,
+      ties: 0
+    }
+  },
+  {
+    id: 'mock-league-5',
+    name: 'Hoop Dreams',
+    description: 'Basketball fantasy league focusing on season-long performance',
+    sport: 'basketball',
+    createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000, // 90 days ago
+    createdBy: 'user-202',
+    managerIds: ['manager-43', 'manager-44', 'manager-45', 'manager-46', 'manager-47', 'manager-48', 'manager-49', 'manager-50', 'manager-51', 'manager-52'],
+    rosterSpots: [
+      { position: 'PG', count: 1 },
+      { position: 'SG', count: 1 },
+      { position: 'SF', count: 1 },
+      { position: 'PF', count: 1 },
+      { position: 'C', count: 1 },
+      { position: 'G', count: 1 },
+      { position: 'F', count: 1 },
+      { position: 'UTIL', count: 2 },
+      { position: 'BN', count: 4 }
+    ],
+    scoringSystem: {
+      type: 'custom',
+      rules: {
+        'points': 1,
+        'rebounds': 1,
+        'assists': 1,
+        'steals': 2,
+        'blocks': 2,
+        'turnovers': -1
+      }
+    },
+    isPublic: true,
+    currentRecord: {
+      wins: 12,
+      losses: 2,
+      ties: 0
+    }
+  }
+];
+
+// Mock data for league details with additional information
+const mockLeagueDetails: Record<string, any> = {
+  'mock-league-1': {
+    leagueInfo: {
+      current_week: 12,
+      start_week: 1,
+      end_week: 17,
+      current_season: '2023-2024',
+      draft_status: 'completed',
+      draft_date: '2023-08-28',
+      draft_type: 'live',
+      league_type: 'private',
+      scoring_type: 'half_ppr',
+      num_playoff_teams: 6,
+      playoff_start_week: 15,
+    },
+    managers: [
+      { id: 'manager-1', name: 'John Smith', team_name: 'Victory Voyagers' },
+      { id: 'manager-2', name: 'Sarah Johnson', team_name: 'Touchdown Terminators' },
+      { id: 'manager-3', name: 'Mike Williams', team_name: 'Gridiron Giants' },
+      { id: 'manager-4', name: 'Emily Davis', team_name: 'Field Fighters' },
+      { id: 'manager-5', name: 'David Brown', team_name: 'Pigskin Patriots' },
+      { id: 'manager-6', name: 'Jessica Wilson', team_name: 'Tackle Titans' },
+      { id: 'manager-7', name: 'Chris Moore', team_name: 'Red Zone Raiders' },
+      { id: 'manager-8', name: 'Amanda Taylor', team_name: 'Blitz Brigade' },
+      { id: 'manager-9', name: 'Ryan Anderson', team_name: 'Spiral Specialists' },
+      { id: 'manager-10', name: 'Lauren Thomas', team_name: 'Endzone Enforcers' }
+    ]
+  },
+  'mock-league-2': {
+    leagueInfo: {
+      current_week: 12,
+      start_week: 1,
+      end_week: 17,
+      current_season: '2023-2024',
+      draft_status: 'completed',
+      draft_date: '2023-08-25',
+      draft_type: 'snake',
+      league_type: 'private',
+      scoring_type: 'standard',
+      num_playoff_teams: 4,
+      playoff_start_week: 15,
+    },
+    managers: [
+      { id: 'manager-11', name: 'Oliver Martinez', team_name: 'Touchdown Tigers' },
+      { id: 'manager-12', name: 'Sophia Lee', team_name: 'Field Goal Falcons' },
+      { id: 'manager-13', name: 'Noah Garcia', team_name: 'Sack Specialists' },
+      { id: 'manager-14', name: 'Emma Rodriguez', team_name: 'Blitz Blazers' },
+      { id: 'manager-15', name: 'William Nguyen', team_name: 'Gridiron Gladiators' },
+      { id: 'manager-16', name: 'Olivia Kim', team_name: 'First Down Fighters' },
+      { id: 'manager-17', name: 'James Patel', team_name: 'Pigskin Punishers' },
+      { id: 'manager-18', name: 'Ava Chen', team_name: 'Red Zone Rascals' },
+      { id: 'manager-19', name: 'Benjamin Cohen', team_name: 'Sideline Spartans' },
+      { id: 'manager-20', name: 'Mia Johnson', team_name: 'Offensive Outlaws' }
+    ]
+  },
+  'mock-league-3': {
+    leagueInfo: {
+      current_week: 12,
+      start_week: 1,
+      end_week: 17,
+      current_season: '2023-2024',
+      draft_status: 'completed',
+      draft_date: '2023-09-01',
+      draft_type: 'auction',
+      league_type: 'private',
+      scoring_type: 'ppr',
+      num_playoff_teams: 8,
+      playoff_start_week: 14,
+    },
+    managers: [
+      { id: 'manager-21', name: 'Ethan Williams', team_name: 'Fantasy Phenoms' },
+      { id: 'manager-22', name: 'Isabella Brown', team_name: 'Sideline Superstars' },
+      { id: 'manager-23', name: 'Alexander Davis', team_name: 'Gridiron Giants' },
+      { id: 'manager-24', name: 'Charlotte Miller', team_name: 'Field Force' },
+      { id: 'manager-25', name: 'Daniel Wilson', team_name: 'Touchdown Titans' },
+      { id: 'manager-26', name: 'Sophie Moore', team_name: 'Pigskin Pros' },
+      { id: 'manager-27', name: 'Matthew Taylor', team_name: 'Red Zone Rulers' },
+      { id: 'manager-28', name: 'Lily Anderson', team_name: 'Blitz Beasts' },
+      { id: 'manager-29', name: 'Andrew Thomas', team_name: 'End Zone Elites' },
+      { id: 'manager-30', name: 'Abigail Jackson', team_name: 'Turf Terminators' },
+      { id: 'manager-31', name: 'Joshua White', team_name: 'Playbook Patriots' },
+      { id: 'manager-32', name: 'Grace Harris', team_name: 'Spiral Specialists' }
+    ]
+  },
+  'mock-league-4': {
+    leagueInfo: {
+      current_week: 8,
+      start_week: 1,
+      end_week: 24,
+      current_season: '2023-2024',
+      draft_status: 'completed',
+      draft_date: '2023-10-15',
+      draft_type: 'snake',
+      league_type: 'private',
+      scoring_type: 'h2h_points',
+      num_playoff_teams: 6,
+      playoff_start_week: 22,
+    },
+    managers: [
+      { id: 'manager-33', name: 'Ryan Lewis', team_name: 'Court Kings' },
+      { id: 'manager-34', name: 'Chloe Clark', team_name: 'Basket Ballers' },
+      { id: 'manager-35', name: 'Samuel Lopez', team_name: 'Jump Shot Jammers' },
+      { id: 'manager-36', name: 'Hannah Young', team_name: 'Dribble Dynamos' },
+      { id: 'manager-37', name: 'Joseph Allen', team_name: 'Hoop Heroes' },
+      { id: 'manager-38', name: 'Zoe Hall', team_name: 'Triple Threat Team' },
+      { id: 'manager-39', name: 'Christopher King', team_name: 'Slam Dunk Stars' },
+      { id: 'manager-40', name: 'Natalie Green', team_name: 'Paint Protectors' },
+      { id: 'manager-41', name: 'Jonathan Baker', team_name: 'Buzzer Beaters' },
+      { id: 'manager-42', name: 'Madison Nelson', team_name: 'Fast Break Force' }
+    ]
+  },
+  'mock-league-5': {
+    leagueInfo: {
+      current_week: 8,
+      start_week: 1,
+      end_week: 24,
+      current_season: '2023-2024',
+      draft_status: 'completed',
+      draft_date: '2023-10-10',
+      draft_type: 'snake',
+      league_type: 'private',
+      scoring_type: 'h2h_categories',
+      num_playoff_teams: 8,
+      playoff_start_week: 21,
+    },
+    managers: [
+      { id: 'manager-43', name: 'Lucas Hill', team_name: 'Three-Point Threats' },
+      { id: 'manager-44', name: 'Audrey Scott', team_name: 'Court Commanders' },
+      { id: 'manager-45', name: 'Jack Adams', team_name: 'Rebound Rulers' },
+      { id: 'manager-46', name: 'Victoria Carter', team_name: 'Assist Aces' },
+      { id: 'manager-47', name: 'Nathan Mitchell', team_name: 'Hoop Dreams' },
+      { id: 'manager-48', name: 'Riley Robinson', team_name: 'Ball Handlers' },
+      { id: 'manager-49', name: 'Elijah Phillips', team_name: 'Alley Oopsters' },
+      { id: 'manager-50', name: 'Avery Rivera', team_name: 'Baseline Ballers' },
+      { id: 'manager-51', name: 'Carter Cook', team_name: 'Paint Punishers' },
+      { id: 'manager-52', name: 'Stella Murphy', team_name: 'Fast Break Phenoms' }
+    ]
+  }
+};
+
+/**
+ * Get public leagues with optional filtering
+ */
+export const getPublicLeagues = async (sport?: string, teamSizes?: number[]): Promise<League[]> => {
+  console.log('Fetching mock public leagues with filters:', { sport, teamSizes });
+  
+  // Apply filters if provided
+  let filteredLeagues = mockPublicLeagues;
+  
+  if (sport) {
+    filteredLeagues = filteredLeagues.filter(league => league.sport === sport);
+  }
+  
+  if (teamSizes && teamSizes.length > 0) {
+    filteredLeagues = filteredLeagues.filter(league => 
+      teamSizes.includes(league.managerIds.length)
+    );
+  }
+  
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  return filteredLeagues;
+};
+
+/**
+ * Get detailed information for a specific league
+ */
+export const getLeagueDetails = async (leagueId: string): Promise<any> => {
+  console.log(`Fetching mock details for league: ${leagueId}`);
+  
+  // Find the basic league data
+  const league = mockPublicLeagues.find(l => l.id === leagueId);
+  
+  if (!league) {
+    throw new Error(`League with ID ${leagueId} not found`);
+  }
+  
+  // Get the additional details
+  const details = mockLeagueDetails[leagueId];
+  
+  if (!details) {
+    throw new Error(`Details for league ${leagueId} not found`);
+  }
+  
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Combine basic league data with additional details
+  return {
+    ...league,
+    details
+  };
+};

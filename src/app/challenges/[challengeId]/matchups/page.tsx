@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import Navigation from '@/components/Navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { Trophy, ArrowLeft } from 'lucide-react'
+import { Trophy, ArrowLeft, MessageCircle, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
 // Mock data for demonstration purposes
@@ -41,12 +40,47 @@ const mockChallenges = {
   }
 }
 
+// Mock messages data for trash talk preview
+const mockMessages = [
+  {
+    id: 1,
+    sender: 'John Smith',
+    league: 'Fantasy Football League',
+    message: '',
+    timestamp: '2023-11-25T14:30:00Z',
+    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+    mediaType: 'meme',
+    mediaUrl: 'https://i.imgflip.com/7z5o1e.jpg'
+  },
+  {
+    id: 2,
+    sender: 'Mike Johnson',
+    league: 'Touchdown Titans',
+    message: 'Talk is cheap. We\'ll see who\'s laughing on Sunday!',
+    timestamp: '2023-11-25T14:45:00Z',
+    avatar: 'https://randomuser.me/api/portraits/men/44.jpg',
+    mediaType: 'gif',
+    mediaUrl: 'https://media.giphy.com/media/3o7TKUZfJKUKuSWTZe/giphy.gif'
+  },
+  {
+    id: 3,
+    sender: 'Sarah Williams',
+    league: 'Fantasy Football League',
+    message: '',
+    timestamp: '2023-11-25T15:10:00Z',
+    avatar: 'https://randomuser.me/api/portraits/women/65.jpg',
+    mediaType: 'meme',
+    mediaUrl: 'https://i.imgflip.com/7z5oc4.jpg'
+  }
+]
+
 export default function ChallengeMatchupsPage() {
   const router = useRouter()
   const params = useParams()
   const { user, loading } = useAuth()
   const [matchups, setMatchups] = useState(mockMatchups)
   const [challengeDetails, setChallengeDetails] = useState<any>(null)
+  const [trashTalkMessages, setTrashTalkMessages] = useState(mockMessages)
   const challengeId = params?.challengeId as string
 
   // Redirect if not logged in
@@ -78,7 +112,6 @@ export default function ChallengeMatchupsPage() {
   if (loading || !challengeDetails) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navigation />
         <div className="flex-grow flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
@@ -97,10 +130,18 @@ export default function ChallengeMatchupsPage() {
   const awayWins = matchups.filter(match => match.awayScore > match.homeScore).length
   const ties = matchups.filter(match => match.homeScore === match.awayScore).length
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navigation />
-      
       <main className="container-default py-8">
         <div className="mb-6">
           <Link href={`/challenges/${challengeId}`} className="flex items-center text-indigo-600 hover:text-indigo-800 mb-4">
@@ -194,6 +235,64 @@ export default function ChallengeMatchupsPage() {
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </div>
+        
+        {/* Trash Talk Preview Section */}
+        <div className="mt-8 bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-indigo-50 px-6 py-4 flex justify-between items-center border-b border-indigo-100">
+            <div className="flex items-center">
+              <MessageCircle className="h-5 w-5 text-indigo-600 mr-2" />
+              <h2 className="text-lg font-bold text-gray-900">Memes & Trash Talk</h2>
+            </div>
+            <Link 
+              href={`/challenges/${challengeId}/trash-talk`}
+              className="flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+            >
+              View All
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
+          
+          <div className="divide-y divide-gray-100">
+            {trashTalkMessages.slice(0, 3).map((msg) => (
+              <div key={msg.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-start space-x-3">
+                  <img 
+                    src={msg.avatar} 
+                    alt={msg.sender} 
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <div className="flex-grow">
+                    <div className="flex items-baseline">
+                      <span className="font-medium text-gray-900 mr-2">{msg.sender}</span>
+                      <span className="text-xs text-gray-500">{formatDate(msg.timestamp)}</span>
+                    </div>
+                    <span className="text-xs text-indigo-600 mb-1 block">{msg.league}</span>
+                    {msg.message && <p className="text-gray-700 mb-2">{msg.message}</p>}
+                    {msg.mediaUrl && (
+                      <div className="mt-1 rounded-lg overflow-hidden border border-gray-200">
+                        <img 
+                          src={msg.mediaUrl} 
+                          alt={`${msg.mediaType || 'media'} shared by ${msg.sender}`}
+                          className="w-full h-auto max-h-48 object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="bg-gray-50 px-6 py-3 border-t border-gray-100">
+            <Link 
+              href={`/challenges/${challengeId}/trash-talk`}
+              className="w-full flex items-center justify-center text-indigo-600 hover:text-indigo-800 font-medium py-2"
+            >
+              Join the meme war
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
           </div>
         </div>
         

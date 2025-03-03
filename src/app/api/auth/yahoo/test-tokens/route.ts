@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       userId: currentUser.uid,
       existingTokens: existingTokens ? {
-        accessTokenPrefix: existingTokens.access_token.substring(0, 10) + '...',
-        refreshTokenPrefix: existingTokens.refresh_token.substring(0, 10) + '...',
-        expiresAt: new Date(existingTokens.expires_at).toISOString(),
-        isExpired: existingTokens.expires_at < Date.now()
+        accessTokenPrefix: existingTokens.access_token ? existingTokens.access_token.substring(0, 10) + '...' : 'undefined',
+        refreshTokenPrefix: existingTokens.refresh_token ? existingTokens.refresh_token.substring(0, 10) + '...' : 'undefined',
+        expiresAt: existingTokens.expires_at ? new Date(existingTokens.expires_at).toISOString() : 'undefined',
+        isExpired: existingTokens.expires_at ? existingTokens.expires_at < Date.now() : true
       } : 'No tokens found'
     })
   } catch (error) {
@@ -86,10 +86,10 @@ export async function POST(request: NextRequest) {
         expiresAt: new Date(testTokens.expires_at).toISOString()
       },
       storedTokens: storedTokens ? {
-        accessTokenPrefix: storedTokens.access_token.substring(0, 10) + '...',
-        refreshTokenPrefix: storedTokens.refresh_token.substring(0, 10) + '...',
-        expiresAt: new Date(storedTokens.expires_at).toISOString(),
-        isExpired: storedTokens.expires_at < Date.now()
+        accessTokenPrefix: storedTokens.access_token ? storedTokens.access_token.substring(0, 10) + '...' : 'undefined',
+        refreshTokenPrefix: storedTokens.refresh_token ? storedTokens.refresh_token.substring(0, 10) + '...' : 'undefined',
+        expiresAt: storedTokens.expires_at ? new Date(storedTokens.expires_at).toISOString() : 'undefined',
+        isExpired: storedTokens.expires_at ? storedTokens.expires_at < Date.now() : true
       } : 'No tokens found after storage attempt'
     })
   } catch (error) {

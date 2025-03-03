@@ -4,47 +4,47 @@ import { NextResponse } from 'next/server'
 const MOCK_PUBLIC_LEAGUES = [
   {
     id: 'public-league-1',
-    name: 'Fantasy Football Champions',
-    description: 'A competitive fantasy football league for serious players',
+    name: 'Fantasy Football Pro',
+    description: 'Competitive fantasy football league with standard scoring',
     sport: 'football',
     season: '2023',
     managerIds: ['user1', 'user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10'],
-    scoringSystem: { type: 'ppr', description: 'Points Per Reception' },
+    scoringSystem: { type: 'standard', description: 'Standard Scoring' },
     isPublic: true,
-    createdAt: '2023-08-15T12:00:00Z'
+    createdAt: '2023-08-15T10:30:00Z'
   },
   {
     id: 'public-league-2',
-    name: 'Basketball Elite',
-    description: 'Fantasy basketball league with advanced scoring',
+    name: 'Basketball Champions',
+    description: 'Fantasy basketball league with head-to-head points scoring',
     sport: 'basketball',
     season: '2023-2024',
     managerIds: ['user1', 'user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8'],
-    scoringSystem: { type: 'h2h', description: 'Head-to-Head Points' },
+    scoringSystem: { type: 'points', description: 'Head-to-Head Points' },
     isPublic: true,
-    createdAt: '2023-10-10T14:30:00Z'
+    createdAt: '2023-09-20T14:15:00Z'
   },
   {
     id: 'public-league-3',
     name: 'Baseball Legends',
-    description: 'Fantasy baseball league with traditional rotisserie scoring',
+    description: 'Fantasy baseball league with rotisserie scoring',
     sport: 'baseball',
     season: '2023',
     managerIds: ['user1', 'user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10', 'user11', 'user12'],
     scoringSystem: { type: 'roto', description: 'Rotisserie' },
     isPublic: true,
-    createdAt: '2023-03-20T09:15:00Z'
+    createdAt: '2023-03-10T09:45:00Z'
   },
   {
     id: 'public-league-4',
-    name: 'Hockey Masters',
-    description: 'Fantasy hockey league for NHL fans',
+    name: 'Hockey Elite',
+    description: 'Fantasy hockey league with advanced scoring',
     sport: 'hockey',
     season: '2023-2024',
     managerIds: ['user1', 'user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10'],
-    scoringSystem: { type: 'points', description: 'Points Only' },
+    scoringSystem: { type: 'advanced', description: 'Advanced Scoring' },
     isPublic: true,
-    createdAt: '2023-09-25T16:45:00Z'
+    createdAt: '2023-10-01T16:00:00Z'
   },
   {
     id: 'public-league-5',

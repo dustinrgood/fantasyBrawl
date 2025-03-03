@@ -231,7 +231,7 @@ export default function YahooLeagueSelector({ onComplete, onCancel }: YahooLeagu
                 try {
                   const tokens = await api.getYahooTokens();
                   console.log('- Yahoo tokens:', tokens ? 'Available' : 'Not available');
-                  if (tokens) {
+                  if (tokens && tokens.expires_at) {
                     console.log('  - Token expires at:', new Date(tokens.expires_at).toLocaleString());
                     console.log('  - Token expired:', tokens.expires_at < Date.now());
                   }
@@ -290,12 +290,7 @@ export default function YahooLeagueSelector({ onComplete, onCancel }: YahooLeagu
         
         <div className="flex flex-col space-y-4">
           <div className="flex justify-center">
-            <YahooAuthButton 
-              variant="primary" 
-              size="md" 
-              label="Connect Yahoo Fantasy"
-              onConnect={() => fetchLeagues()}
-            />
+            <YahooAuthButton />
           </div>
           
           <div className="flex justify-between space-x-3">
@@ -312,10 +307,10 @@ export default function YahooLeagueSelector({ onComplete, onCancel }: YahooLeagu
                   const tokens = await yahooSportsApi.getYahooTokens();
                   console.log('- Yahoo tokens:', tokens ? 'Available' : 'Not available');
                   if (tokens) {
-                    console.log('  - Access token:', tokens.access_token.substring(0, 10) + '...');
-                    console.log('  - Refresh token:', tokens.refresh_token.substring(0, 10) + '...');
-                    console.log('  - Token expires at:', new Date(tokens.expires_at).toLocaleString());
-                    console.log('  - Token expired:', tokens.expires_at < Date.now());
+                    console.log('  - Access token:', tokens.access_token ? tokens.access_token.substring(0, 10) + '...' : 'undefined');
+                    console.log('  - Refresh token:', tokens.refresh_token ? tokens.refresh_token.substring(0, 10) + '...' : 'undefined');
+                    console.log('  - Token expires at:', tokens.expires_at ? new Date(tokens.expires_at).toLocaleString() : 'undefined');
+                    console.log('  - Token expired:', tokens.expires_at ? tokens.expires_at < Date.now() : true);
                   }
                   
                   // Test API connection

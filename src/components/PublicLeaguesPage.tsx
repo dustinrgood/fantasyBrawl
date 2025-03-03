@@ -42,10 +42,14 @@ export default function PublicLeaguesPage() {
     }
     
     // Only fetch if user is logged in
-    if (user) {
-      fetchInitialLeagues()
+    if (!loading) {
+      if (user) {
+        fetchInitialLeagues()
+      } else {
+        setIsLoading(false)
+      }
     }
-  }, [user])
+  }, [user, loading])
   
   // Redirect if not logged in
   useEffect(() => {

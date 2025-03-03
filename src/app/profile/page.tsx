@@ -6,8 +6,8 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { useYahooFantasy } from '@/lib/hooks/useYahooFantasy'
 import YahooAuthButton from '@/components/YahooAuthButton'
 import YahooLeagueImportModal from '@/components/YahooLeagueImportModal'
+import ConnectYahooButton from '@/components/ConnectYahooButton'
 import Link from 'next/link'
-import Navigation from '@/components/Navigation'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -63,7 +63,6 @@ export default function ProfilePage() {
   if (loading || isYahooLoading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navigation />
         <div className="flex-grow flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
@@ -77,8 +76,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navigation />
-      
       <div className="flex-grow py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -98,6 +95,8 @@ export default function ProfilePage() {
                 >
                   Back to Dashboard
                 </Link>
+                
+                <ConnectYahooButton />
                 
                 <Link
                   href="/auth/yahoo-tokens"
@@ -199,11 +198,7 @@ export default function ProfilePage() {
                         )}
                       </div>
                     ) : (
-                      <YahooAuthButton 
-                        variant="outline" 
-                        size="sm" 
-                        onConnect={() => setShowImportModal(true)}
-                      />
+                      <YahooAuthButton />
                     )}
                   </dd>
                 </div>

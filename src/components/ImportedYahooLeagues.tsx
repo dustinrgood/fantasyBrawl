@@ -113,10 +113,10 @@ export default function ImportedYahooLeagues() {
           
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link 
-              href="/profile" 
+              href="/leagues/yahoo-picker" 
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
             >
-              Refresh Yahoo Connection
+              Connect Yahoo Fantasy
             </Link>
             <a 
               href="https://football.fantasysports.yahoo.com/f1/signup" 

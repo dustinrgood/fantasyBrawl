@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '../../lib/hooks/useAuth'
-import Navigation from '../../components/Navigation'
 import { Trophy, Users, MessageSquare, Plus, ArrowRight } from 'lucide-react'
 import { League, Challenge } from '../../lib/types/fantasy'
 import { getLeaguesByManagerId, getChallengesByLeagueId } from '../../lib/services/fantasyService'
@@ -51,7 +50,6 @@ export default function Dashboard() {
   if (loading || loadingData) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navigation />
         <div className="flex-grow flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
         </div>
@@ -62,7 +60,6 @@ export default function Dashboard() {
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navigation />
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Sign In Required</h2>
@@ -75,8 +72,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
       <main className="container-default section-padding">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div className="page-header">
@@ -228,7 +223,7 @@ export default function Dashboard() {
                 <Link href="/leagues/create" className="btn btn-primary">
                   Create League
                 </Link>
-                <Link href="/profile/connect-yahoo" className="btn btn-secondary">
+                <Link href="/leagues/yahoo-picker" className="btn btn-secondary">
                   Import from Yahoo
                 </Link>
               </div>

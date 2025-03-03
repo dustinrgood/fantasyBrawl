@@ -185,9 +185,9 @@ export const storeYahooTokens = async (tokens: YahooTokens) => {
   try {
     console.log(`Storing tokens for user: ${currentUser.uid}`)
     console.log('Token data:', {
-      accessTokenPrefix: tokens.access_token.substring(0, 10) + '...',
-      refreshTokenPrefix: tokens.refresh_token.substring(0, 10) + '...',
-      expiresAt: new Date(tokens.expires_at).toLocaleString()
+      accessTokenPrefix: tokens.access_token ? tokens.access_token.substring(0, 10) + '...' : 'undefined',
+      refreshTokenPrefix: tokens.refresh_token ? tokens.refresh_token.substring(0, 10) + '...' : 'undefined',
+      expiresAt: tokens.expires_at ? new Date(tokens.expires_at).toLocaleString() : 'undefined'
     })
     
     // Get the auth token
@@ -271,10 +271,10 @@ export const getYahooTokens = async (): Promise<YahooTokens | null> => {
     
     const tokens = data.tokens as YahooTokens
     console.log('Yahoo tokens found in Firestore:', {
-      accessTokenPrefix: tokens.access_token.substring(0, 10) + '...',
-      refreshTokenPrefix: tokens.refresh_token.substring(0, 10) + '...',
-      expiresAt: new Date(tokens.expires_at).toLocaleString(),
-      isExpired: tokens.expires_at < Date.now()
+      accessTokenPrefix: tokens.access_token ? tokens.access_token.substring(0, 10) + '...' : 'undefined',
+      refreshTokenPrefix: tokens.refresh_token ? tokens.refresh_token.substring(0, 10) + '...' : 'undefined',
+      expiresAt: tokens.expires_at ? new Date(tokens.expires_at).toLocaleString() : 'undefined',
+      isExpired: tokens.expires_at ? tokens.expires_at < Date.now() : true
     })
     
     return tokens
@@ -381,10 +381,15 @@ export const setYahooUserToken = async (): Promise<boolean> => {
       }
       
       // Add debug logging
-      console.log('Setting Yahoo user token:', tokens.access_token.substring(0, 10) + '...')
-      console.log('Setting Yahoo refresh token:', tokens.refresh_token.substring(0, 10) + '...')
+      console.log('Setting Yahoo user token:', tokens.access_token ? tokens.access_token.substring(0, 10) + '...' : 'undefined')
+      console.log('Setting Yahoo refresh token:', tokens.refresh_token ? tokens.refresh_token.substring(0, 10) + '...' : 'undefined')
       
       // Set the tokens
+      if (!tokens.access_token || !tokens.refresh_token) {
+        console.error('Missing access or refresh token')
+        return false
+      }
+      
       yf.setUserToken(tokens.access_token)
       yf.setRefreshToken(tokens.refresh_token)
       

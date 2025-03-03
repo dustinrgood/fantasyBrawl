@@ -3,7 +3,6 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
-import Navigation from '@/components/Navigation'
 import YahooLeagueDetails from '@/components/YahooLeagueDetails'
 
 interface LeaguePageProps {
@@ -31,7 +30,6 @@ export default function LeaguePage({ params }: LeaguePageProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navigation />
         <div className="flex-grow flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
@@ -45,8 +43,6 @@ export default function LeaguePage({ params }: LeaguePageProps) {
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navigation />
-      
       <div className="flex-grow py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <YahooLeagueDetails 

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/firebase/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 
 /**
- * This route stores Yahoo tokens in Firestore
+ * This route stores Yahoo tokens for a user
  */
 export async function POST(request: NextRequest) {
   try {
@@ -18,40 +18,53 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    if (!tokens) {
+    if (!tokens || !tokens.access_token || !tokens.refresh_token || !tokens.expires_at) {
       return NextResponse.json(
-        { error: 'Tokens are required' },
+        { error: 'Invalid tokens provided' },
         { status: 400 }
       )
     }
     
     console.log(`Storing Yahoo tokens for user: ${userId}`)
-    console.log('Token info:', {
-      accessTokenPrefix: tokens.access_token.substring(0, 10) + '...',
-      refreshTokenPrefix: tokens.refresh_token.substring(0, 10) + '...',
-      expiresAt: new Date(tokens.expires_at).toLocaleString()
-    })
     
-    // Store tokens in Firestore
+    // Format the tokens for storage
+    const yahooTokens = {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: new Date(tokens.expires_at).toISOString()
+    }
+    
+    // Check if the user document exists
     const userRef = doc(db, 'users', userId)
-    await setDoc(userRef, {
-      yahooTokens: tokens,
-      yahooConnected: true,
-      yahooTokensUpdatedAt: new Date().toISOString()
-    }, { merge: true })
+    const userDoc = await getDoc(userRef)
     
-    console.log('Yahoo tokens successfully stored in Firestore')
+    if (userDoc.exists()) {
+      // Update the existing document
+      await updateDoc(userRef, {
+        yahooTokens,
+        yahooTokensUpdatedAt: new Date().toISOString()
+      })
+    } else {
+      // Create a new document
+      await setDoc(userRef, {
+        yahooTokens,
+        yahooTokensUpdatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      })
+    }
+    
+    console.log(`Successfully stored Yahoo tokens for user: ${userId}`)
     
     return NextResponse.json({
       success: true,
-      message: 'Yahoo tokens stored successfully'
+      message: 'Tokens stored successfully'
     })
   } catch (error) {
     console.error('Error storing Yahoo tokens:', error)
     
-    return NextResponse.json({
-      error: 'Failed to store Yahoo tokens',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
   }
 } 

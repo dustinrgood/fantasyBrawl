@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Navigation from '@/components/Navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { Trophy, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -58,7 +57,6 @@ export default function MatchupsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Navigation />
         <div className="flex-grow flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
@@ -72,8 +70,6 @@ export default function MatchupsPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navigation />
-      
       <main className="container-default py-8">
         <div className="mb-6">
           <Link href="/challenges" className="flex items-center text-indigo-600 hover:text-indigo-800 mb-4">
@@ -117,7 +113,7 @@ export default function MatchupsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {matchups.map((matchup, index) => {
                   // Determine winner for styling
                   const homeWins = matchup.homeScore > matchup.awayScore

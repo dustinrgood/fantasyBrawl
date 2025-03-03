@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase/firebase'
-import { doc, getDoc } from 'firebase/firestore'
+import axios from 'axios'
+import { Agent } from 'https'
+
+// Create a custom agent that ignores SSL certificate errors in development
+const isDev = process.env.NODE_ENV === 'development'
+const httpsAgent = isDev ? new Agent({ rejectUnauthorized: false }) : undefined
 
 /**
  * Helper function to check if it's currently the NFL offseason
@@ -14,90 +18,159 @@ function isNflOffseason(): boolean {
 }
 
 /**
- * This route provides debug information about Yahoo tokens
+ * This route provides debug information about Yahoo authentication
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get userId from query string
-    const { searchParams } = new URL(request.url)
+    // Get the user ID from the query parameters
+    const searchParams = request.nextUrl.searchParams
     const userId = searchParams.get('userId')
     
-    // Add NFL season status information
-    const seasonStatus = {
-      isOffseason: isNflOffseason(),
-      currentMonth: new Date().getMonth() + 1,
-      message: isNflOffseason() 
-        ? "It's currently the NFL offseason. Yahoo Fantasy API may not return any active leagues during this period."
-        : "It's currently the active NFL season. Yahoo Fantasy API should return your leagues if you have any."
-    }
-    
     if (!userId) {
-      return NextResponse.json({
-        authenticated: false,
-        seasonStatus,
-        configuration: {
-          yahooClientId: process.env.YAHOO_CLIENT_ID ? 'Configured' : 'Missing',
-          yahooClientSecret: process.env.YAHOO_CLIENT_SECRET ? 'Configured' : 'Missing',
-          yahooRedirectUri: process.env.YAHOO_REDIRECT_URI || 'Not configured',
-          environment: process.env.NODE_ENV || 'unknown'
-        },
-        tokens: {
-          status: 'not authenticated',
-          message: 'User ID is required'
-        }
-      })
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      )
     }
     
-    // Get tokens from Firestore
-    const userRef = doc(db, 'users', userId)
-    const userDoc = await getDoc(userRef)
+    console.log(`Fetching Yahoo debug info for user: ${userId}`)
     
-    if (!userDoc.exists() || !userDoc.data().yahooTokens) {
-      return NextResponse.json({
-        authenticated: true,
-        userId,
-        seasonStatus,
-        configuration: {
-          yahooClientId: process.env.YAHOO_CLIENT_ID ? 'Configured' : 'Missing',
-          yahooClientSecret: process.env.YAHOO_CLIENT_SECRET ? 'Configured' : 'Missing',
-          yahooRedirectUri: process.env.YAHOO_REDIRECT_URI || 'Not configured',
-          environment: process.env.NODE_ENV || 'unknown'
-        },
-        tokens: {
-          status: 'no tokens',
-          message: 'No Yahoo tokens found for user'
-        }
-      })
-    }
+    // Get the tokens
+    const tokensUrl = new URL('/api/auth/yahoo/get-tokens', request.nextUrl.origin)
+    tokensUrl.searchParams.append('userId', userId)
     
-    const tokens = userDoc.data().yahooTokens
-    const isExpired = tokens.expires_at < Date.now()
-    
-    return NextResponse.json({
-      authenticated: true,
-      userId,
-      seasonStatus,
-      configuration: {
-        yahooClientId: process.env.YAHOO_CLIENT_ID ? 'Configured' : 'Missing',
-        yahooClientSecret: process.env.YAHOO_CLIENT_SECRET ? 'Configured' : 'Missing',
-        yahooRedirectUri: process.env.YAHOO_REDIRECT_URI || 'Not configured',
-        environment: process.env.NODE_ENV || 'unknown'
-      },
-      tokens: {
-        status: 'tokens found',
-        accessTokenPrefix: tokens.access_token.substring(0, 10) + '...',
-        refreshTokenPrefix: tokens.refresh_token.substring(0, 10) + '...',
-        expiresAt: new Date(tokens.expires_at).toLocaleString(),
-        isExpired,
-        updatedAt: userDoc.data().yahooTokensUpdatedAt || 'unknown'
-      }
+    const tokensResponse = await axios.get(tokensUrl.toString(), {
+      httpsAgent,
+      timeout: 10000
     })
-  } catch (error) {
-    console.error('Error in Yahoo debug endpoint:', error)
     
-    return NextResponse.json({
-      error: 'Failed to get debug information',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 })
+    if (tokensResponse.status !== 200 || !tokensResponse.data.tokens) {
+      return NextResponse.json({
+        isConnected: false,
+        error: 'No Yahoo tokens found'
+      })
+    }
+    
+    const tokens = tokensResponse.data.tokens
+    console.log('Debug route received tokens:', {
+      keys: Object.keys(tokens),
+      hasAccessToken: !!tokens.accessToken,
+      hasRefreshToken: !!tokens.refreshToken,
+      hasExpiresAt: !!tokens.expiresAt,
+      hasAccess_Token: !!tokens.access_token,
+      hasRefresh_Token: !!tokens.refresh_token,
+      hasExpires_At: !!tokens.expires_at,
+      tokenType: typeof tokens
+    })
+    
+    // Handle both token formats (camelCase and snake_case)
+    const accessToken = tokens.access_token || tokens.accessToken
+    const refreshToken = tokens.refresh_token || tokens.refreshToken
+    const expiresAt = tokens.expires_at || tokens.expiresAt
+    
+    // Check if tokens are expired
+    const isExpired = expiresAt ? new Date(expiresAt) <= new Date() : true
+    
+    // Prepare the debug info
+    const debugInfo: {
+      isConnected: boolean;
+      tokens: {
+        accessTokenPrefix: string;
+        refreshTokenPrefix: string;
+        expiresAt: string | number;
+        isExpired: boolean;
+        raw?: any;
+      };
+      games?: Array<{
+        id: string;
+        key: string;
+        name: string;
+        code: string;
+        season: string;
+        isActive: boolean;
+      }>;
+      error?: string;
+    } = {
+      isConnected: !!accessToken && !!refreshToken,
+      tokens: {
+        accessTokenPrefix: accessToken ? accessToken.substring(0, 10) + '...' : 'undefined',
+        refreshTokenPrefix: refreshToken ? refreshToken.substring(0, 10) + '...' : 'undefined',
+        expiresAt: expiresAt || 'undefined',
+        isExpired,
+        raw: {
+          keys: Object.keys(tokens),
+          hasAccessToken: !!tokens.accessToken,
+          hasRefreshToken: !!tokens.refreshToken,
+          hasExpiresAt: !!tokens.expiresAt,
+          hasAccess_Token: !!tokens.access_token,
+          hasRefresh_Token: !!tokens.refresh_token,
+          hasExpires_At: !!tokens.expires_at
+        }
+      }
+    }
+    
+    // If tokens are not expired, try to fetch games
+    if (!isExpired) {
+      try {
+        // Make a request to the Yahoo API to get games
+        const proxyUrl = new URL('/api/yahoo/proxy', request.nextUrl.origin)
+        const proxyResponse = await axios.post(
+          proxyUrl.toString(),
+          {
+            userId,
+            endpoint: 'users;use_login=1/games'
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            httpsAgent,
+            timeout: 10000
+          }
+        )
+        
+        if (proxyResponse.status === 200 && proxyResponse.data.fantasy_content) {
+          const fantasyContent = proxyResponse.data.fantasy_content
+          const games = []
+          
+          // Extract games from the response
+          if (fantasyContent.users?.[0]?.user?.[1]?.games) {
+            const gamesData = fantasyContent.users[0].user[1].games
+            
+            // Yahoo API returns games as an object with numeric keys and a 'count' property
+            for (const key in gamesData) {
+              if (key !== 'count' && !isNaN(parseInt(key))) {
+                const game = gamesData[key].game[0]
+                games.push({
+                  id: game.game_id,
+                  key: game.game_key,
+                  name: game.name,
+                  code: game.code,
+                  season: game.season,
+                  isActive: game.is_registration_over === 0
+                })
+              }
+            }
+          }
+          
+          debugInfo.games = games
+        }
+      } catch (error) {
+        console.error('Error fetching Yahoo games:', error)
+        // Don't fail the entire request if games fetch fails
+      }
+    }
+    
+    return NextResponse.json(debugInfo)
+  } catch (error) {
+    console.error('Error in Yahoo debug route:', error)
+    
+    return NextResponse.json(
+      { 
+        isConnected: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
   }
 } 
