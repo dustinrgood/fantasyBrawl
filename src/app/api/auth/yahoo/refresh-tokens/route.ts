@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase/firebase'
 // Yahoo OAuth refresh endpoint
 const YAHOO_REFRESH_URL = 'https://api.login.yahoo.com/oauth2/get_token'
 // Your Yahoo client ID and secret should be stored in environment variables
-const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
+const YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
 const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
 
 /**
@@ -14,21 +14,13 @@ const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId, refreshToken } = await request.json()
+    const { userId } = await request.json()
 
     // Validate required parameters
     if (!userId) {
       console.error('Missing userId in request body')
       return NextResponse.json(
         { error: 'Missing userId in request body' },
-        { status: 400 }
-      )
-    }
-
-    if (!refreshToken) {
-      console.error('Missing refreshToken in request body')
-      return NextResponse.json(
-        { error: 'Missing refreshToken in request body' },
         { status: 400 }
       )
     }
@@ -44,6 +36,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
+      )
+    }
+
+    // Get the current tokens
+    const userData = userDoc.data();
+    if (!userData.yahooTokens) {
+      console.error(`No Yahoo tokens found for user: ${userId}`)
+      return NextResponse.json(
+        { error: 'No Yahoo tokens found' },
+        { status: 404 }
+      )
+    }
+
+    // Get the refresh token, handling both formats
+    const refreshToken = userData.yahooTokens.refreshToken || userData.yahooTokens.refresh_token;
+    
+    if (!refreshToken) {
+      console.error('No refresh token found in user data')
+      return NextResponse.json(
+        { error: 'No refresh token available' },
+        { status: 400 }
       )
     }
 
@@ -74,14 +87,16 @@ export async function POST(request: NextRequest) {
 
     // Extract the new tokens
     const newTokens = {
-      access_token: response.data.access_token,
-      refresh_token: response.data.refresh_token || refreshToken, // Use the new refresh token if provided, otherwise keep the old one
-      expires_at: new Date(Date.now() + response.data.expires_in * 1000).toISOString()
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token || refreshToken, // Use the new refresh token if provided, otherwise keep the old one
+      expiresAt: Date.now() + response.data.expires_in * 1000
     }
 
     // Update the user document with the new tokens
     await updateDoc(userRef, {
-      'yahooTokens': newTokens
+      'yahooTokens': newTokens,
+      'yahooConnected': true,
+      'yahooTokensUpdatedAt': new Date().toISOString()
     })
 
     console.log(`Successfully refreshed Yahoo tokens for user: ${userId}`)

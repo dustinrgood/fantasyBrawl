@@ -10,7 +10,7 @@ const REDIRECT_URI = typeof window !== 'undefined'
   ? `${window.location.origin}/api/auth/yahoo/callback`
   : process.env.NEXT_PUBLIC_APP_URL 
     ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/yahoo/callback`
-    : 'https://localhost:3000/api/auth/yahoo/callback'
+    : 'https://localhost:3001/api/auth/yahoo/callback'
 
 // Types
 export interface YahooTokens {
@@ -245,39 +245,43 @@ export const getYahooTokens = async (): Promise<YahooTokens | null> => {
       return null
     }
     
-    // Use the new API endpoint to get tokens
-    const response = await fetch('/api/auth/yahoo/get-tokens', {
-      method: 'POST',
+    // Use the new API endpoint to get tokens - using GET method
+    const response = await fetch(`/api/auth/yahoo/get-tokens?userId=${currentUser.uid}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`
-      },
-      body: JSON.stringify({
-        userId: currentUser.uid
-      }),
+      }
     })
     
     if (!response.ok) {
-      console.error('Error retrieving tokens:', await response.text())
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      console.error('Error retrieving Yahoo tokens:', errorData)
       return null
     }
     
     const data = await response.json()
     
-    if (!data.found) {
-      console.log('No Yahoo tokens found in Firestore for user')
+    if (!data.tokens) {
+      console.error('No tokens found in response')
       return null
     }
     
-    const tokens = data.tokens as YahooTokens
-    console.log('Yahoo tokens found in Firestore:', {
-      accessTokenPrefix: tokens.access_token ? tokens.access_token.substring(0, 10) + '...' : 'undefined',
-      refreshTokenPrefix: tokens.refresh_token ? tokens.refresh_token.substring(0, 10) + '...' : 'undefined',
-      expiresAt: tokens.expires_at ? new Date(tokens.expires_at).toLocaleString() : 'undefined',
-      isExpired: tokens.expires_at ? tokens.expires_at < Date.now() : true
+    // Handle both token formats
+    const tokens = data.tokens
+    const yahooTokens: YahooTokens = {
+      access_token: tokens.accessToken || tokens.access_token,
+      refresh_token: tokens.refreshToken || tokens.refresh_token,
+      expires_at: tokens.expiresAt || tokens.expires_at
+    }
+    
+    console.log('Yahoo tokens retrieved successfully')
+    console.log('Token data:', {
+      accessTokenPrefix: yahooTokens.access_token ? yahooTokens.access_token.substring(0, 10) + '...' : 'undefined',
+      refreshTokenPrefix: yahooTokens.refresh_token ? yahooTokens.refresh_token.substring(0, 10) + '...' : 'undefined',
+      expiresAt: yahooTokens.expires_at ? new Date(yahooTokens.expires_at).toLocaleString() : 'undefined'
     })
     
-    return tokens
+    return yahooTokens
   } catch (error) {
     console.error('Error retrieving Yahoo tokens:', error)
     return null
@@ -307,33 +311,57 @@ export const refreshYahooTokenIfNeeded = async (): Promise<YahooTokens | null> =
     
     console.log('Refreshing Yahoo tokens...')
     
-    // Make the refresh token request
-    const response = await fetch('/api/auth/yahoo/refresh', {
+    const currentUser = auth.currentUser
+    if (!currentUser) {
+      console.error('No user logged in when trying to refresh Yahoo tokens')
+      return null
+    }
+    
+    // Get the auth token
+    const authToken = await getAuthToken()
+    if (!authToken) {
+      console.error('Failed to get authentication token')
+      return null
+    }
+    
+    // Make the refresh token request to the correct endpoint
+    const response = await fetch('/api/auth/yahoo/refresh-tokens', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify({
-        refresh_token: tokens.refresh_token,
+        userId: currentUser.uid
       }),
     })
     
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to refresh token')
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      console.error('Error refreshing Yahoo tokens:', errorData)
+      throw new Error(errorData.error || 'Failed to refresh token')
     }
     
-    const refreshedTokens = await response.json()
+    const data = await response.json()
     
-    // Store the new tokens
+    if (!data.success || !data.tokens) {
+      console.error('No tokens returned from refresh endpoint')
+      return null
+    }
+    
+    // Format the tokens to match our expected structure
     const newTokens: YahooTokens = {
-      access_token: refreshedTokens.access_token,
-      refresh_token: refreshedTokens.refresh_token,
-      expires_at: Date.now() + refreshedTokens.expires_in * 1000,
+      access_token: data.tokens.accessToken,
+      refresh_token: data.tokens.refreshToken,
+      expires_at: data.tokens.expiresAt
     }
     
-    await storeYahooTokens(newTokens)
     console.log('Yahoo tokens refreshed successfully')
+    console.log('Token data:', {
+      accessTokenPrefix: newTokens.access_token ? newTokens.access_token.substring(0, 10) + '...' : 'undefined',
+      refreshTokenPrefix: newTokens.refresh_token ? newTokens.refresh_token.substring(0, 10) + '...' : 'undefined',
+      expiresAt: newTokens.expires_at ? new Date(newTokens.expires_at).toLocaleString() : 'undefined'
+    })
     
     return newTokens
   } catch (error) {
@@ -471,6 +499,7 @@ export const fetchUserLeaguesDirectly = async () => {
         'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify({
+        userId: currentUser.uid,
         endpoint: 'users;use_login=1/games'
       }),
     })
@@ -522,6 +551,7 @@ export const fetchUserLeaguesDirectly = async () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            userId: currentUser.uid,
             endpoint: `users;use_login=1/games;game_keys=${game.game_key}/leagues`
           }),
         })
@@ -606,7 +636,7 @@ export const fetchLeagueDetails = async (leagueKey: string) => {
       throw new Error('Failed to get authentication token')
     }
     
-    // Call the Yahoo proxy API
+    // Call the Yahoo proxy API for basic league details
     const response = await fetch('/api/yahoo/proxy', {
       method: 'POST',
       headers: {
@@ -614,17 +644,160 @@ export const fetchLeagueDetails = async (leagueKey: string) => {
         'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify({
+        userId: currentUser.uid,
         endpoint: `league/${leagueKey}`
       }),
     })
     
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to fetch league details')
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to fetch league details')
     }
     
     const data = await response.json()
-    return data
+    
+    // Now fetch the league settings to get roster configuration
+    const settingsResponse = await fetch('/api/yahoo/proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        userId: currentUser.uid,
+        endpoint: `league/${leagueKey}/settings`
+      }),
+    })
+    
+    // Process the basic league data
+    const leagueData = data.fantasy_content?.league?.[0] || {}
+    const leagueDetails = {
+      name: leagueData.name || '',
+      league_key: leagueData.league_key || '',
+      league_id: leagueData.league_id || '',
+      season: leagueData.season || '',
+      num_teams: leagueData.num_teams || 0,
+      scoring_type: leagueData.scoring_type || '',
+      start_date: leagueData.start_date || '',
+      end_date: leagueData.end_date || '',
+      current_week: leagueData.current_week || '',
+      start_week: leagueData.start_week || '',
+      end_week: leagueData.end_week || '',
+      game_code: leagueData.game_code || '',
+      league_type: leagueData.league_type || '',
+      draft_status: leagueData.draft_status || '',
+      draft_time: leagueData.draft_time || '',
+      weekly_deadline: leagueData.weekly_deadline || '',
+      is_finished: leagueData.is_finished === '1',
+    }
+    
+    // Extract standings if available
+    const standingsData = data.fantasy_content?.league?.[1]?.standings?.[0]?.teams || []
+    const teams = []
+    
+    // Process teams data
+    for (const key in standingsData) {
+      if (key !== 'count') {
+        const teamData = standingsData[key]?.team?.[0] || {}
+        const teamStandings = standingsData[key]?.team?.[1]?.team_standings || {}
+        
+        teams.push({
+          team_key: teamData.team_key || '',
+          team_id: teamData.team_id || '',
+          name: teamData.name || '',
+          url: teamData.url || '',
+          team_logo: teamData.team_logos?.[0]?.team_logo?.url || '',
+          waiver_priority: teamData.waiver_priority || '',
+          number_of_moves: teamData.number_of_moves || '',
+          number_of_trades: teamData.number_of_trades || '',
+          managers: teamData.managers || [],
+          team_standings: {
+            rank: teamStandings.rank || 0,
+            playoff_seed: teamStandings.playoff_seed || 0,
+            outcome_totals: {
+              wins: teamStandings.outcome_totals?.wins || 0,
+              losses: teamStandings.outcome_totals?.losses || 0,
+              ties: teamStandings.outcome_totals?.ties || 0,
+              percentage: teamStandings.outcome_totals?.percentage || '0.000'
+            },
+            points_for: parseFloat(teamStandings.points_for || '0'),
+            points_against: parseFloat(teamStandings.points_against || '0')
+          }
+        })
+      }
+    }
+    
+    // Add settings data if available
+    let settings = {}
+    if (settingsResponse.ok) {
+      const settingsData = await settingsResponse.json()
+      const rosterPositions = settingsData.fantasy_content?.league?.[1]?.settings?.[0]?.roster_positions || []
+      const statCategories = settingsData.fantasy_content?.league?.[1]?.settings?.[0]?.stat_categories || {}
+      const leagueSettings = settingsData.fantasy_content?.league?.[1]?.settings?.[0] || {}
+      
+      // Process roster positions
+      const processedRosterPositions = []
+      for (const key in rosterPositions) {
+        if (key !== 'count') {
+          const position = rosterPositions[key].roster_position
+          if (position) {
+            processedRosterPositions.push({
+              position: position.position,
+              position_type: position.position_type,
+              count: parseInt(position.count || '1')
+            })
+          }
+        }
+      }
+      
+      // Process stat categories
+      const processedStatCategories = {
+        stats: []
+      }
+      
+      if (statCategories.stats) {
+        for (const key in statCategories.stats) {
+          if (key !== 'count') {
+            const stat = statCategories.stats[key].stat
+            if (stat) {
+              processedStatCategories.stats.push({
+                stat_id: stat.stat_id,
+                name: stat.name,
+                display_name: stat.display_name,
+                sort_order: stat.sort_order,
+                position_type: stat.position_type,
+                is_only_display_stat: stat.is_only_display_stat
+              })
+            }
+          }
+        }
+      }
+      
+      settings = {
+        roster_positions: processedRosterPositions,
+        stat_categories: processedStatCategories,
+        max_teams: leagueSettings.max_teams || leagueDetails.num_teams,
+        waiver_type: leagueSettings.waiver_type || '',
+        uses_playoff: leagueSettings.uses_playoff === '1',
+        playoff_start_week: leagueSettings.playoff_start_week || '',
+        uses_playoff_reseeding: leagueSettings.uses_playoff_reseeding === '1',
+        uses_lock_eliminated_teams: leagueSettings.uses_lock_eliminated_teams === '1',
+        num_playoff_teams: leagueSettings.num_playoff_teams || '',
+        has_playoff_consolation_games: leagueSettings.has_playoff_consolation_games === '1'
+      }
+    }
+    
+    // Return the combined data
+    return {
+      details: {
+        ...leagueDetails,
+        settings
+      },
+      standings: {
+        teams
+      }
+    }
+    
   } catch (error) {
     console.error('Error fetching league details:', error)
     throw error

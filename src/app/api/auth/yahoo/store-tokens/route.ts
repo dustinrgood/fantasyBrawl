@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/firebase/firebase'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, setDoc } from 'firebase/firestore'
 
 /**
  * This route stores Yahoo tokens for a user
@@ -18,46 +18,34 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    if (!tokens || !tokens.access_token || !tokens.refresh_token || !tokens.expires_at) {
+    if (!tokens || !tokens.access_token || !tokens.refresh_token) {
       return NextResponse.json(
-        { error: 'Invalid tokens provided' },
+        { error: 'Valid tokens are required' },
         { status: 400 }
       )
     }
     
     console.log(`Storing Yahoo tokens for user: ${userId}`)
     
-    // Format the tokens for storage
-    const yahooTokens = {
+    // Format tokens for storage
+    const formattedTokens = {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
-      expiresAt: new Date(tokens.expires_at).toISOString()
+      expiresAt: tokens.expires_at || Date.now() + (3600 * 1000), // Default 1 hour expiry
     }
     
-    // Check if the user document exists
+    // Store the tokens in Firestore
     const userRef = doc(db, 'users', userId)
-    const userDoc = await getDoc(userRef)
+    await setDoc(userRef, {
+      yahooTokens: formattedTokens,
+      yahooConnected: true,
+      yahooTokensUpdatedAt: new Date().toISOString()
+    }, { merge: true })
     
-    if (userDoc.exists()) {
-      // Update the existing document
-      await updateDoc(userRef, {
-        yahooTokens,
-        yahooTokensUpdatedAt: new Date().toISOString()
-      })
-    } else {
-      // Create a new document
-      await setDoc(userRef, {
-        yahooTokens,
-        yahooTokensUpdatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString()
-      })
-    }
-    
-    console.log(`Successfully stored Yahoo tokens for user: ${userId}`)
+    console.log('Yahoo tokens stored successfully')
     
     return NextResponse.json({
-      success: true,
-      message: 'Tokens stored successfully'
+      success: true
     })
   } catch (error) {
     console.error('Error storing Yahoo tokens:', error)

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useEffect, useState } from "react";
-import { signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut } from "firebase/auth";
-import { User } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, User } from "firebase/auth";
 import { auth } from "../firebase/firebase";
 
 interface AuthContextType {
@@ -24,28 +23,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
+    // Check if auth has onAuthStateChanged method (it won't if we're using the mock)
+    if (auth && typeof auth.onAuthStateChanged === 'function') {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        setUser(user);
+        setLoading(false);
+      });
+      return () => unsubscribe();
+    } else {
+      // If using mock auth, just set loading to false
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+      return () => {};
+    }
   }, []);
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error signing in with Google", error);
+    // Check if we have real Firebase auth
+    if (auth && typeof auth.signInWithPopup === 'function') {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error("Error signing in with Google", error);
+      }
+    } else {
+      console.warn("Firebase auth is not initialized. Sign in is not available.");
+      alert("Firebase is not configured. Please add Firebase credentials to .env.local file.");
     }
   };
 
   const signOutUser = async () => {
-    try {
-      await firebaseSignOut(auth);
-    } catch (error) {
-      console.error("Error signing out", error);
+    // Check if we have real Firebase auth
+    if (auth && typeof auth.signOut === 'function') {
+      try {
+        await firebaseSignOut(auth);
+      } catch (error) {
+        console.error("Error signing out", error);
+      }
+    } else {
+      console.warn("Firebase auth is not initialized. Sign out is not available.");
     }
   };
 

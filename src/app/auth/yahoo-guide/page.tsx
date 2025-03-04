@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
-import YahooAuthButton from '@/components/YahooAuthButton'
+import YahooAuthButton from '@/app/components/YahooAuthButton'
 
 export default function YahooGuidePage() {
   const { user } = useAuth()
@@ -68,7 +68,7 @@ export default function YahooGuidePage() {
                 If you encounter any issues connecting your Yahoo Fantasy account:
               </p>
               <ul className="list-disc pl-6">
-                <li>Ensure you're using HTTPS (https://localhost:3000) for local development</li>
+                <li>Ensure you're using HTTPS (https://localhost:3001) for local development</li>
                 <li>Check that you've authorized the correct permissions on Yahoo</li>
                 <li>Try clearing your browser cookies and cache</li>
                 <li>Visit the <Link href="/auth/yahoo-debug" className="text-indigo-600 hover:text-indigo-500">Debug Page</Link> for more detailed diagnostics</li>

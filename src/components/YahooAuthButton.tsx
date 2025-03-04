@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { Loader2 } from 'lucide-react'
+import { initiateYahooAuth } from '@/lib/services/yahooSportsApi'
 
 export default function YahooAuthButton() {
   const { user } = useAuth()
@@ -17,27 +18,11 @@ export default function YahooAuthButton() {
     try {
       setIsLoading(true)
       
-      // In a real implementation, this would redirect to Yahoo OAuth
-      // For now, we'll just simulate the process
+      // Use the yahooSportsApi service to initiate the OAuth flow
+      initiateYahooAuth()
       
-      // 1. Get the auth URL from our backend
-      const response = await fetch('/api/auth/yahoo/auth-url', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ userId: user.uid })
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to get auth URL')
-      }
-      
-      const { authUrl } = await response.json()
-      
-      // 2. Redirect to Yahoo for authentication
-      window.location.href = authUrl
+      // Note: initiateYahooAuth will redirect the user to Yahoo,
+      // so we don't need to handle the response here
     } catch (error) {
       console.error('Error connecting to Yahoo:', error)
       alert(error instanceof Error ? error.message : 'Failed to connect to Yahoo')

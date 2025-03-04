@@ -261,7 +261,7 @@ export default function YahooTokensPage() {
         ? `${window.location.origin}/api/auth/yahoo/callback`
         : process.env.NEXT_PUBLIC_APP_URL 
           ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/yahoo/callback`
-          : 'https://localhost:3000/api/auth/yahoo/callback'
+          : 'https://localhost:3001/api/auth/yahoo/callback'
       
       if (redirectUri.startsWith('http://')) {
         redirectUri = redirectUri.replace('http://', 'https://')

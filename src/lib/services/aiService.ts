@@ -12,8 +12,30 @@ interface TrashTalkPrompt {
   format?: 'text' | 'voice'
 }
 
+// Mock trash talk responses for development without API keys
+const mockTrashTalkResponses = [
+  "Your fantasy team is so bad, even the bench is trying to get traded!",
+  "I've seen better draft picks in a kindergarten coloring contest!",
+  "Your team's performance is like a bad WiFi connection - unreliable and disappointing.",
+  "My grandmother could manage a better fantasy team, and she doesn't even know what football is!",
+  "Your lineup decisions are like your fashion choices - questionable at best.",
+  "I'm going to beat you so badly this week, you'll need to rename your team 'The Participation Trophy'.",
+  "Your team is putting up fewer points than a soccer match in a snowstorm.",
+  "I heard your star player is questionable this week. Actually, your whole team is questionable.",
+  "My team is going to score so many points against you, the app might crash.",
+  "Your fantasy strategy is like a flip phone - outdated and ineffective."
+];
+
 export const generateTrashTalk = async (prompt: TrashTalkPrompt): Promise<string> => {
   try {
+    // Check if we're in development mode without API keys
+    if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+      console.warn('AI API keys not found. Using mock implementation.');
+      // Return a random mock response
+      const randomIndex = Math.floor(Math.random() * mockTrashTalkResponses.length);
+      return mockTrashTalkResponses[randomIndex];
+    }
+
     const response = await fetch('/api/openai/chat', {
       method: 'POST',
       headers: {
@@ -50,6 +72,12 @@ export const generateTrashTalk = async (prompt: TrashTalkPrompt): Promise<string
 
 export const generateVoiceTrashTalk = async (text: string): Promise<string> => {
   try {
+    // Check if we're in development mode without API keys
+    if (!process.env.DEEPGRAM_API_KEY) {
+      console.warn('Deepgram API key not found. Using mock implementation.');
+      return text;
+    }
+
     // This would call a text-to-speech API
     // For now, we'll just return the text as a placeholder
     return text

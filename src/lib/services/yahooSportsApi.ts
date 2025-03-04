@@ -9,7 +9,7 @@ const REDIRECT_URI = typeof window !== 'undefined'
   ? `${window.location.origin}/api/auth/yahoo/callback`
   : process.env.NEXT_PUBLIC_APP_URL 
     ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/yahoo/callback`
-    : 'https://localhost:3000/api/auth/yahoo/callback'
+    : 'https://localhost:3001/api/auth/yahoo/callback'
 
 // Yahoo API endpoints
 const YAHOO_AUTH_URL = 'https://api.login.yahoo.com/oauth2/request_auth'
@@ -233,49 +233,33 @@ export const fetchUserLeagues = async () => {
     
     console.log('Making API request to Yahoo Fantasy API for leagues...')
     
-    // Try a simpler endpoint first - just get the user's games
-    const data = await fetchFromYahooApi('/users;use_login=1/games')
-    
-    console.log('Yahoo API response received:', JSON.stringify(data).substring(0, 200) + '...')
-    
-    // Check if the response has the expected structure
-    if (!data.fantasy_content || !data.fantasy_content.users || !data.fantasy_content.users[0].user) {
-      console.error('Unexpected Yahoo API response structure:', data)
-      throw new Error('Unexpected response from Yahoo API')
+    // Get the current user
+    const currentUser = auth.currentUser
+    if (!currentUser) {
+      throw new Error('User must be logged in to fetch Yahoo leagues')
     }
     
-    // Check if there are any games
-    const games = data.fantasy_content.users[0].user[1].games
+    // Use the dedicated leagues API endpoint instead of direct Yahoo API calls
+    console.log('Using leagues API endpoint')
+    const response = await fetch('/api/yahoo/leagues', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: currentUser.uid
+      }),
+    })
     
-    if (!games || games.count === 0) {
-      console.log('No games found for user')
-      return []
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(errorData.error || `Failed to fetch leagues: ${response.status} ${response.statusText}`)
     }
     
-    // Find the NFL game
-    let nflGameKey = null
-    for (let i = 0; i < games.count; i++) {
-      const game = games[i].game
-      if (game[0].code === 'nfl') {
-        nflGameKey = game[0].game_key
-        break
-      }
-    }
+    const data = await response.json()
+    console.log('Leagues API response:', data)
     
-    if (!nflGameKey) {
-      console.log('No NFL game found for user')
-      return []
-    }
-    
-    // Now fetch leagues for the NFL game
-    console.log(`Found NFL game key: ${nflGameKey}, fetching leagues...`)
-    const leaguesData = await fetchFromYahooApi(`/users;use_login=1/games;game_keys=${nflGameKey}/leagues`)
-    
-    // Extract leagues from the response
-    const leagues = leaguesData.fantasy_content.users[0].user[1].games[0].game[1].leagues
-    console.log('Extracted leagues:', leagues ? 'Found leagues' : 'No leagues found')
-    
-    return leagues
+    return data
   } catch (error) {
     console.error('Error fetching user leagues:', error)
     console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')

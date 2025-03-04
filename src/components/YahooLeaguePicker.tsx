@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { ArrowLeft, Check, Loader2 } from 'lucide-react'
@@ -19,24 +19,96 @@ interface YahooLeague {
 
 export default function YahooLeaguePicker() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading } = useAuth()
   const [leagues, setLeagues] = useState<YahooLeague[]>([])
   const [selectedLeagues, setSelectedLeagues] = useState<Record<string, boolean>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isImporting, setIsImporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [processingTokens, setProcessingTokens] = useState(false)
+  
+  // Handle tokens from URL
+  useEffect(() => {
+    const handleTokensFromUrl = async () => {
+      if (!user) return;
+      
+      const success = searchParams.get('success');
+      const tokensParam = searchParams.get('tokens');
+      
+      if (success === 'true' && tokensParam) {
+        try {
+          setProcessingTokens(true);
+          console.debug('Processing Yahoo tokens from URL');
+          
+          // Parse tokens from URL
+          const tokens = JSON.parse(tokensParam);
+          console.debug('Parsed tokens:', { 
+            access_token_prefix: tokens.access_token ? tokens.access_token.substring(0, 10) + '...' : 'undefined',
+            refresh_token_prefix: tokens.refresh_token ? tokens.refresh_token.substring(0, 10) + '...' : 'undefined',
+            expires_at: tokens.expires_at
+          });
+          
+          // Store tokens using the server API
+          const response = await fetch('/api/auth/yahoo/store-tokens', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+              tokens: {
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                expires_at: tokens.expires_at
+              }
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Error response from store-tokens:', errorData);
+            throw new Error(errorData.error || 'Failed to store tokens');
+          }
+          
+          console.debug('Yahoo tokens stored successfully');
+          
+          // Remove tokens from URL (for security)
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('tokens');
+          window.history.replaceState({}, '', newUrl.toString());
+          
+          // Wait a moment for the tokens to be properly stored
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Refresh the page to fetch leagues with the new tokens
+          window.location.reload();
+        } catch (error) {
+          console.error('Error storing Yahoo tokens:', error);
+          setError('Failed to store Yahoo authentication. Please try again.');
+        } finally {
+          setProcessingTokens(false);
+        }
+      }
+    };
+    
+    if (!loading) {
+      handleTokensFromUrl();
+    }
+  }, [user, loading, searchParams, router]);
   
   // Fetch Yahoo leagues
   useEffect(() => {
     const fetchYahooLeagues = async () => {
-      if (!user) {
-        setIsLoading(false)
-        return
+      if (!user || processingTokens) {
+        return;
       }
       
       try {
-        setIsLoading(true)
-        setError(null)
+        setIsLoading(true);
+        setError(null);
+        
+        console.debug('Fetching Yahoo leagues for user:', user.uid);
         
         const response = await fetch('/api/yahoo/leagues', {
           method: 'POST',
@@ -44,65 +116,72 @@ export default function YahooLeaguePicker() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ userId: user.uid })
-        })
+        });
         
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to fetch Yahoo leagues')
+          const errorText = await response.text();
+          console.error('Error response from leagues API:', errorText);
+          
+          try {
+            const errorData = JSON.parse(errorText);
+            throw new Error(errorData.error || `Failed to fetch Yahoo leagues: ${response.status}`);
+          } catch (e) {
+            throw new Error(`Failed to fetch Yahoo leagues: ${response.status} - ${errorText.substring(0, 100)}`);
+          }
         }
         
-        const data = await response.json()
-        setLeagues(data.leagues || [])
+        const data = await response.json();
+        console.debug('Leagues API response:', data);
+        
+        setLeagues(data.leagues || []);
         
         // Initialize selected leagues (all selected by default)
-        const initialSelected: Record<string, boolean> = {}
-        data.leagues.forEach((league: YahooLeague) => {
-          initialSelected[league.league_id] = true
-        })
-        setSelectedLeagues(initialSelected)
+        const initialSelected: Record<string, boolean> = {};
+        (data.leagues || []).forEach((league: YahooLeague) => {
+          initialSelected[league.league_id] = true;
+        });
+        setSelectedLeagues(initialSelected);
       } catch (error) {
-        console.error('Error fetching Yahoo leagues:', error)
-        setError(error instanceof Error ? error.message : 'Failed to fetch Yahoo leagues')
+        console.error('Error fetching Yahoo leagues:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch Yahoo leagues');
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
     
-    if (!loading) {
-      if (user) {
-        fetchYahooLeagues()
-      } else {
-        router.push('/login?redirect=/leagues/yahoo-picker')
-      }
+    if (!loading && user && !processingTokens) {
+      fetchYahooLeagues();
+    } else if (!loading && !user) {
+      router.push('/login?redirect=/leagues/yahoo-picker');
     }
-  }, [user, loading, router])
+  }, [user, loading, router, processingTokens]);
   
   // Handle league selection
   const toggleLeagueSelection = (leagueId: string) => {
     setSelectedLeagues(prev => ({
       ...prev,
       [leagueId]: !prev[leagueId]
-    }))
-  }
+    }));
+  };
   
   // Handle import
   const handleImport = async () => {
     if (!user) {
-      router.push('/login?redirect=/leagues/yahoo-picker')
-      return
+      router.push('/login?redirect=/leagues/yahoo-picker');
+      return;
     }
     
     const leaguesToImport = Object.entries(selectedLeagues)
       .filter(([_, isSelected]) => isSelected)
-      .map(([leagueId]) => leagueId)
+      .map(([leagueId]) => leagueId);
     
     if (leaguesToImport.length === 0) {
-      alert('Please select at least one league to import')
-      return
+      alert('Please select at least one league to import');
+      return;
     }
     
     try {
-      setIsImporting(true)
+      setIsImporting(true);
       
       const response = await fetch('/api/yahoo/import-leagues', {
         method: 'POST',
@@ -113,21 +192,21 @@ export default function YahooLeaguePicker() {
           userId: user.uid,
           leagueIds: leaguesToImport
         })
-      })
+      });
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to import leagues')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to import leagues');
       }
       
       // Redirect to my leagues page
-      router.push('/leagues/my')
+      router.push('/leagues/my');
     } catch (error) {
-      console.error('Error importing leagues:', error)
-      alert(error instanceof Error ? error.message : 'Failed to import leagues')
-      setIsImporting(false)
+      console.error('Error importing leagues:', error);
+      alert(error instanceof Error ? error.message : 'Failed to import leagues');
+      setIsImporting(false);
     }
-  }
+  };
   
   // Redirect if not logged in
   if (loading) {
@@ -135,11 +214,11 @@ export default function YahooLeaguePicker() {
       <div className="flex justify-center items-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
-    )
+    );
   }
   
   if (!user) {
-    return null // Will redirect in useEffect
+    return null; // Will redirect in useEffect
   }
   
   return (
@@ -212,14 +291,14 @@ export default function YahooLeaguePicker() {
                 <div className="flex items-center">
                   <button
                     onClick={() => {
-                      const allSelected = leagues.every(league => selectedLeagues[league.league_id])
-                      const newSelection: Record<string, boolean> = {}
+                      const allSelected = leagues.every(league => selectedLeagues[league.league_id]);
+                      const newSelection: Record<string, boolean> = {};
                       
                       leagues.forEach(league => {
-                        newSelection[league.league_id] = !allSelected
-                      })
+                        newSelection[league.league_id] = !allSelected;
+                      });
                       
-                      setSelectedLeagues(newSelection)
+                      setSelectedLeagues(newSelection);
                     }}
                     className="text-sm text-indigo-600 hover:text-indigo-800"
                   >
@@ -249,12 +328,9 @@ export default function YahooLeaguePicker() {
                       >
                         <div className="font-medium">{league.name}</div>
                         <div className="text-gray-500 text-xs">
-                          {league.sport} • {league.season} • {league.num_teams} Teams • {league.scoring_type}
+                          {league.sport.toUpperCase()} • Season: {league.season} • Teams: {league.num_teams}
                         </div>
                       </label>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {league.is_finished ? 'Completed' : 'Active'}
                     </div>
                   </div>
                 </li>
@@ -262,27 +338,24 @@ export default function YahooLeaguePicker() {
             </ul>
           </div>
           
-          <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex justify-center">
             <button
               onClick={handleImport}
-              disabled={isImporting || Object.values(selectedLeagues).every(v => !v)}
+              disabled={isImporting || leagues.length === 0}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center"
             >
               {isImporting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Importing Leagues...
+                  Importing...
                 </>
               ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Import Selected Leagues
-                </>
+                'Import Selected Leagues'
               )}
             </button>
           </div>
         </>
       )}
     </div>
-  )
+  );
 } 

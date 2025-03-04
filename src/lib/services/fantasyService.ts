@@ -25,8 +25,32 @@ import {
   Player,
 } from '../types/fantasy'
 
+// Check if Firebase is properly initialized
+const isFirebaseInitialized = db && typeof db === 'object';
+
+// Mock data for development without Firebase
+const mockData = {
+  users: [] as User[],
+  managers: [] as Manager[],
+  leagues: [] as League[],
+  challenges: [] as Challenge[],
+  matchups: [] as Matchup[],
+  trashTalkMessages: [] as TrashTalkMessage[],
+};
+
 // User Services
 export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>) => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    const newUser = {
+      ...userData,
+      id: `mock-user-${Date.now()}`,
+      createdAt: Date.now(),
+    };
+    mockData.users.push(newUser as User);
+    return newUser.id;
+  }
+
   const userRef = await addDoc(collection(db, 'users'), {
     ...userData,
     createdAt: serverTimestamp(),
@@ -35,6 +59,11 @@ export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>) => {
 }
 
 export const getUserById = async (userId: string): Promise<User | null> => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    return mockData.users.find(user => user.id === userId) || null;
+  }
+
   const userDoc = await getDoc(doc(db, 'users', userId))
   if (!userDoc.exists()) return null
   return { id: userDoc.id, ...userDoc.data() } as User
@@ -42,28 +71,68 @@ export const getUserById = async (userId: string): Promise<User | null> => {
 
 // Manager Services
 export const createManager = async (managerData: Omit<Manager, 'id'>) => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    const newManager = {
+      ...managerData,
+      id: `mock-manager-${Date.now()}`,
+    };
+    mockData.managers.push(newManager as Manager);
+    return newManager.id;
+  }
+
   const managerRef = await addDoc(collection(db, 'managers'), managerData)
   return managerRef.id
 }
 
 export const getManagerById = async (managerId: string): Promise<Manager | null> => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    return mockData.managers.find(manager => manager.id === managerId) || null;
+  }
+
   const managerDoc = await getDoc(doc(db, 'managers', managerId))
   if (!managerDoc.exists()) return null
   return { id: managerDoc.id, ...managerDoc.data() } as Manager
 }
 
 export const getManagersByUserId = async (userId: string): Promise<Manager[]> => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    return mockData.managers.filter(manager => manager.userId === userId);
+  }
+
   const managersQuery = query(collection(db, 'managers'), where('userId', '==', userId))
   const managersSnapshot = await getDocs(managersQuery)
   return managersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Manager))
 }
 
 export const updateManager = async (managerId: string, data: Partial<Manager>) => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    const managerIndex = mockData.managers.findIndex(manager => manager.id === managerId);
+    if (managerIndex !== -1) {
+      mockData.managers[managerIndex] = { ...mockData.managers[managerIndex], ...data };
+    }
+    return;
+  }
+
   await updateDoc(doc(db, 'managers', managerId), data)
 }
 
 // League Services
 export const createLeague = async (leagueData: Omit<League, 'id' | 'createdAt'>) => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    const newLeague = {
+      ...leagueData,
+      id: `mock-league-${Date.now()}`,
+      createdAt: Date.now(),
+    };
+    mockData.leagues.push(newLeague as League);
+    return newLeague.id;
+  }
+
   const leagueRef = await addDoc(collection(db, 'leagues'), {
     ...leagueData,
     createdAt: serverTimestamp(),
@@ -72,12 +141,91 @@ export const createLeague = async (leagueData: Omit<League, 'id' | 'createdAt'>)
 }
 
 export const getLeagueById = async (leagueId: string): Promise<League | null> => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    return mockData.leagues.find(league => league.id === leagueId) || null;
+  }
+
   const leagueDoc = await getDoc(doc(db, 'leagues', leagueId))
   if (!leagueDoc.exists()) return null
   return { id: leagueDoc.id, ...leagueDoc.data() } as League
 }
 
 export const getLeaguesByManagerId = async (managerId: string): Promise<League[]> => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    // Create some mock leagues for development
+    if (mockData.leagues.length === 0) {
+      mockData.leagues = [
+        {
+          id: 'mock-league-1',
+          name: 'Mock Football League',
+          description: 'A mock football league for development',
+          sport: 'football',
+          createdAt: Date.now(),
+          createdBy: 'mock-user-1',
+          managerIds: [managerId],
+          rosterSpots: [
+            { position: 'QB', count: 1 },
+            { position: 'RB', count: 2 },
+            { position: 'WR', count: 2 },
+            { position: 'TE', count: 1 },
+            { position: 'FLEX', count: 1 },
+            { position: 'K', count: 1 },
+            { position: 'DEF', count: 1 },
+          ],
+          scoringSystem: {
+            type: 'ppr',
+            rules: {
+              passingYards: 0.04,
+              passingTD: 4,
+              rushingYards: 0.1,
+              rushingTD: 6,
+              reception: 1,
+              receivingYards: 0.1,
+              receivingTD: 6,
+            },
+          },
+          isPublic: true,
+          currentRecord: { wins: 5, losses: 2, ties: 0 },
+        } as League,
+        {
+          id: 'mock-league-2',
+          name: 'Mock Basketball League',
+          description: 'A mock basketball league for development',
+          sport: 'basketball',
+          createdAt: Date.now(),
+          createdBy: 'mock-user-1',
+          managerIds: [managerId],
+          rosterSpots: [
+            { position: 'PG', count: 1 },
+            { position: 'SG', count: 1 },
+            { position: 'SF', count: 1 },
+            { position: 'PF', count: 1 },
+            { position: 'C', count: 1 },
+            { position: 'G', count: 1 },
+            { position: 'F', count: 1 },
+            { position: 'UTIL', count: 2 },
+          ],
+          scoringSystem: {
+            type: 'standard',
+            rules: {
+              points: 1,
+              rebounds: 1.2,
+              assists: 1.5,
+              steals: 3,
+              blocks: 3,
+              turnovers: -1,
+            },
+          },
+          isPublic: true,
+          currentRecord: { wins: 3, losses: 4, ties: 0 },
+        } as League,
+      ];
+    }
+    return mockData.leagues.filter(league => league.managerIds.includes(managerId));
+  }
+
   const leaguesQuery = query(
     collection(db, 'leagues'),
     where('managerIds', 'array-contains', managerId)
@@ -163,6 +311,43 @@ export const getChallengeById = async (challengeId: string): Promise<Challenge |
 }
 
 export const getChallengesByLeagueId = async (leagueId: string): Promise<Challenge[]> => {
+  if (!isFirebaseInitialized) {
+    console.warn('Firebase not initialized. Using mock implementation.');
+    // Create some mock challenges for development
+    if (mockData.challenges.length === 0) {
+      mockData.challenges = [
+        {
+          id: 'mock-challenge-1',
+          createdAt: Date.now(),
+          createdBy: 'mock-user-1',
+          status: 'accepted',
+          challengerLeagueId: 'mock-league-1',
+          challengedLeagueId: 'mock-league-2',
+          weekNumber: 5,
+          season: 2023,
+          matchups: [
+            { id: 'mock-matchup-1' },
+            { id: 'mock-matchup-2' },
+          ],
+        } as Challenge,
+        {
+          id: 'mock-challenge-2',
+          createdAt: Date.now(),
+          createdBy: 'mock-user-2',
+          status: 'pending',
+          challengerLeagueId: 'mock-league-2',
+          challengedLeagueId: 'mock-league-1',
+          weekNumber: 6,
+          season: 2023,
+          matchups: [],
+        } as Challenge,
+      ];
+    }
+    return mockData.challenges.filter(
+      challenge => challenge.challengerLeagueId === leagueId || challenge.challengedLeagueId === leagueId
+    );
+  }
+
   const challengesQuery = query(
     collection(db, 'challenges'),
     where('challengerLeagueId', '==', leagueId)

@@ -15,6 +15,12 @@ export interface Manager {
   leagueIds: string[]
 }
 
+export interface TeamRecord {
+  wins: number
+  losses: number
+  ties: number
+}
+
 export interface League {
   id: string
   name: string
@@ -26,7 +32,8 @@ export interface League {
   rosterSpots: RosterSpot[]
   scoringSystem: ScoringSystem
   isPublic: boolean
-  currentRecord?: Record
+  currentRecord?: TeamRecord
+  record?: string // For display purposes
 }
 
 export interface RosterSpot {
@@ -74,12 +81,6 @@ export interface TrashTalkMessage {
   isAiGenerated: boolean
 }
 
-export interface Record {
-  wins: number
-  losses: number
-  ties: number
-}
-
 export interface FantasyTeam {
   id: string
   managerId: string
@@ -87,7 +88,7 @@ export interface FantasyTeam {
   name: string
   logo?: string
   players: Player[]
-  record: Record
+  record: TeamRecord
 }
 
 export interface Player {

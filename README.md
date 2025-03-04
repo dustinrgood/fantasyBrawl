@@ -15,7 +15,7 @@ To use the Yahoo Fantasy integration:
    YAHOO_CLIENT_ID=your_client_id
    YAHOO_CLIENT_SECRET=your_client_secret
    NEXT_PUBLIC_YAHOO_CLIENT_ID=your_client_id
-   NEXT_PUBLIC_APP_URL=https://localhost:3000
+   NEXT_PUBLIC_APP_URL=https://localhost:3001
    ```
 3. Ensure you're running the app with HTTPS (default with `npm run dev`)
 4. Navigate to the profile page or use the dashboard quick actions to connect

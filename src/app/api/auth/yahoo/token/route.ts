@@ -7,7 +7,7 @@ const YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
 const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
 const REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL 
   ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/yahoo/callback`
-  : 'https://localhost:3000/api/auth/yahoo/callback'
+  : 'https://localhost:3001/api/auth/yahoo/callback'
 
 // Create a custom agent that ignores SSL certificate errors in development
 const isDev = process.env.NODE_ENV === 'development'

@@ -103,7 +103,7 @@
 - Using Eleven Labs for voice generation
 - Replicate integration for image generation is implemented but disabled via feature flag
 - Yahoo Fantasy integration requires HTTPS for local development
-- Yahoo Developer application must have correct redirect URI: https://localhost:3000/api/auth/yahoo/callback
+- Yahoo Developer application must have correct redirect URI: https://localhost:3001/api/auth/yahoo/callback
 - Server is running on port 3001 (https://localhost:3001)
 - Code is now hosted on GitHub at https://github.com/dustinrgood/fantasyBrawl
 - Key files for styling issues:

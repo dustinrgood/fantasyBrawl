@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { League } from '@/lib/types/fantasy'
-import { importPublicLeague } from '@/lib/services/leagueStorage'
 import { Trophy, Users, Filter, ArrowRight, Loader2, Check } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/useAuth'
 
@@ -18,8 +17,6 @@ export default function PublicLeaguesBrowser({ initialLeagues = [] }: PublicLeag
   const [leagues, setLeagues] = useState<League[]>(initialLeagues)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [importingLeague, setImportingLeague] = useState<string | null>(null)
-  const [importSuccess, setImportSuccess] = useState<Record<string, boolean>>({})
   
   // Filters
   const [selectedSport, setSelectedSport] = useState<string>('')
@@ -87,32 +84,15 @@ export default function PublicLeaguesBrowser({ initialLeagues = [] }: PublicLeag
     }
   }
   
-  const handleImportLeague = async (league: League) => {
-    try {
-      if (!user) {
-        alert('Please sign in to import leagues')
-        router.push('/login?redirect=/leagues/public')
-        return
-      }
-      
-      setImportingLeague(league.id)
-      
-      // Call the import service
-      const newLeagueId = await importPublicLeague(league)
-      
-      // Mark this league as successfully imported
-      setImportSuccess(prev => ({ ...prev, [league.id]: true }))
-      
-      // Redirect to the imported league after a short delay
-      setTimeout(() => {
-        router.push(`/leagues/${newLeagueId}`)
-      }, 1000)
-    } catch (err) {
-      console.error('Error importing league:', err)
-      alert(err instanceof Error ? err.message : 'Failed to import league')
-    } finally {
-      setImportingLeague(null)
+  const handleChallenge = (league: League) => {
+    if (!user) {
+      alert('Please sign in to challenge leagues')
+      router.push('/login?redirect=/leagues/public')
+      return
     }
+    
+    // Navigate to the challenge page with the league info
+    router.push(`/leagues/challenge/${league.id}`)
   }
   
   const handleSportChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -147,7 +127,7 @@ export default function PublicLeaguesBrowser({ initialLeagues = [] }: PublicLeag
               id="sport"
               value={selectedSport}
               onChange={handleSportChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 pl-4 pr-8 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               {sportOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -210,6 +190,9 @@ export default function PublicLeaguesBrowser({ initialLeagues = [] }: PublicLeag
                 <div className="flex flex-col md:flex-row justify-between">
                   <div className="mb-4 md:mb-0">
                     <h3 className="text-xl font-bold text-gray-900 mb-1">{league.name}</h3>
+                    {league.record && (
+                      <p className="text-sm text-gray-500 mb-2">Record: {league.record}</p>
+                    )}
                     <p className="text-gray-600 mb-2">{league.description}</p>
                     
                     <div className="flex flex-wrap gap-4">
@@ -222,12 +205,6 @@ export default function PublicLeaguesBrowser({ initialLeagues = [] }: PublicLeag
                         <Users className="h-4 w-4 mr-1 text-indigo-600" />
                         <span>{league.managerIds.length} Teams</span>
                       </div>
-                      
-                      {league.scoringSystem && (
-                        <div className="flex items-center text-gray-700">
-                          <span className="capitalize">{league.scoringSystem.type} Scoring</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                   
@@ -241,27 +218,10 @@ export default function PublicLeaguesBrowser({ initialLeagues = [] }: PublicLeag
                     </Link>
                     
                     <button
-                      onClick={() => handleImportLeague(league)}
-                      disabled={importingLeague === league.id || !!importSuccess[league.id]}
-                      className={`px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center ${
-                        importSuccess[league.id]
-                          ? 'bg-green-600 text-white'
-                          : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      } disabled:opacity-50`}
+                      onClick={() => handleChallenge(league)}
+                      className="px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center bg-indigo-600 text-white hover:bg-indigo-700"
                     >
-                      {importingLeague === league.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          Importing...
-                        </>
-                      ) : importSuccess[league.id] ? (
-                        <>
-                          <Check className="h-4 w-4 mr-1" />
-                          Imported
-                        </>
-                      ) : (
-                        'Import League'
-                      )}
+                      Challenge
                     </button>
                   </div>
                 </div>

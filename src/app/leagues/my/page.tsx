@@ -1,5 +1,5 @@
 import ImportedYahooLeagues from '@/components/ImportedYahooLeagues'
-import { ArrowLeft, Activity } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export const metadata = {
@@ -25,13 +25,6 @@ export default function MyLeaguesPage() {
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
               >
                 Browse Public Leagues
-              </Link>
-              <Link 
-                href="/leagues/nba-public" 
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Activity className="h-4 w-4 mr-1" />
-                NBA Leagues
               </Link>
             </div>
           </div>
