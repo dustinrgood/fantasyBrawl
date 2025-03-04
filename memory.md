@@ -18,6 +18,8 @@
 - Ensured consistent port usage (3001) across server.js and package.json
 - Fixed NSFW content detection issues in Replicate image generation by implementing content filtering and fallback mechanisms
 - Resolved port conflicts by implementing proper process termination before server restart
+- Fixed "User ID is required" error in Yahoo Fantasy client by ensuring user ID is passed in all API requests
+- Fixed authentication issues in league details page by properly handling user authentication state
 
 ## Pending Issues
 - Ongoing module resolution error with `private-next-rsc-mod-ref-proxy` in Next.js 14.2.7
@@ -65,6 +67,10 @@
 - Integrated Replicate for AI image generation (currently disabled via feature flag)
 - Added voice selection, stability, and similarity boost controls for the voice generation
 - Implemented audio preview functionality for generated voice messages
+- Added sorting functionality to ImportedYahooLeagues component (sort by year, sport, and league name)
+- Removed scoring categories section from YahooLeagueDetails component to standardize scoring across leagues
+- Improved league details UI with clearer organization of league information
+- Added note about standardized scoring in league settings tab
 
 ## Yahoo Fantasy Integration
 - Implemented OAuth 2.0 authentication flow with Yahoo
@@ -75,6 +81,9 @@
 - Added dashboard quick actions for Yahoo Fantasy connection
 - Updated proxy route to handle SSL certificate validation issues
 - Improved error handling and timeout settings for API requests
+- Enhanced league details page with better organization of league information
+- Standardized scoring across leagues for better matchmaking
+- Added sorting functionality to imported leagues for better user experience
 
 ## AI Integration
 - Implemented Eleven Labs voice API for generating voice-powered trash talk
