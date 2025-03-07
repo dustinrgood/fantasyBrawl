@@ -42,23 +42,41 @@ export async function GET(request: NextRequest) {
         }, { status: 401 });
       }
       
-      // Get league details which includes teams
-      console.debug('Calling yahooService.getLeagueDetails');
-      const leagueDetails = await yahooService.getLeagueDetails(leagueKey);
+      // First, try to get basic league details to verify the league exists
+      console.debug('Verifying league exists by fetching basic details');
+      try {
+        await yahooService.getLeagueDetails(leagueKey);
+      } catch (leagueError: any) {
+        console.error('Error verifying league exists:', leagueError);
+        
+        if (leagueError.response?.status === 400) {
+          return NextResponse.json({
+            error: 'League not found or you do not have permission to access it.',
+            details: leagueError.message
+          }, { status: 404 });
+        }
+        
+        // If it's not a 400 error, we'll continue and try to get the teams anyway
+        console.debug('Continuing to fetch teams despite league details error');
+      }
       
-      if (!leagueDetails.teams || leagueDetails.teams.length === 0) {
+      // Get teams directly using the new method
+      console.debug('Calling yahooService.getLeagueTeams');
+      const teams = await yahooService.getLeagueTeams(leagueKey);
+      
+      if (!teams || teams.length === 0) {
         console.debug('No teams found for league:', leagueKey);
         return NextResponse.json({ 
           teams: [] 
         });
       }
       
-      console.debug(`Found ${leagueDetails.teams.length} teams for league: ${leagueKey}`);
+      console.debug(`Found ${teams.length} teams for league: ${leagueKey}`);
       
       return NextResponse.json({ 
-        teams: leagueDetails.teams 
+        teams: teams 
       });
-    } catch (serviceError) {
+    } catch (serviceError: any) {
       console.error('Error in Yahoo Fantasy service:', serviceError);
       
       // Log the full error for debugging
@@ -87,6 +105,13 @@ export async function GET(request: NextRequest) {
           }, { status: 404 });
         }
         
+        if (serviceError.message.includes('400') || serviceError.message.includes('Bad Request')) {
+          return NextResponse.json({
+            error: 'Unable to access this league. You may not have permission or the league key is invalid.',
+            details: serviceError.message
+          }, { status: 400 });
+        }
+        
         // Generic service error
         return NextResponse.json({
           error: 'Failed to fetch league teams from Yahoo Fantasy',
@@ -98,7 +123,7 @@ export async function GET(request: NextRequest) {
       // Re-throw to be caught by the outer catch
       throw serviceError;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unhandled error in league-teams API:', error);
     
     // Log the full error for debugging

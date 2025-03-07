@@ -145,6 +145,14 @@ export default function YahooLeagueDetails({ leagueKey, onBack }: YahooLeagueDet
     console.debug('Active tab changed:', activeTab);
   }, [activeTab]);
   
+  // Add a new effect to load teams data only when the Teams tab is activated
+  useEffect(() => {
+    if (activeTab === 'teams' && leagueDetails && teams.length === 0) {
+      console.debug('Teams tab activated, loading teams data');
+      // Teams will be loaded by the TeamsTab component
+    }
+  }, [activeTab, leagueDetails, teams.length]);
+  
   const toggleTeamExpand = (teamKey: string) => {
     if (expandedTeam === teamKey) {
       setExpandedTeam(null)
@@ -287,23 +295,12 @@ export default function YahooLeagueDetails({ leagueKey, onBack }: YahooLeagueDet
           setActiveTab(value);
         }}
       >
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview" className="flex items-center">
-            <Info className="h-4 w-4 mr-1" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="standings" className="flex items-center">
-            <Trophy className="h-4 w-4 mr-1" />
-            Standings
-          </TabsTrigger>
-          <TabsTrigger value="teams" className="flex items-center">
-            <Users className="h-4 w-4 mr-1" />
-            Teams
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center">
-            <Settings className="h-4 w-4 mr-1" />
-            Settings
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-5">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="standings">Standings</TabsTrigger>
+          <TabsTrigger value="teams">Teams</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="schedule" className="hidden lg:block">Schedule</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">
@@ -485,15 +482,9 @@ export default function YahooLeagueDetails({ leagueKey, onBack }: YahooLeagueDet
           )}
         </TabsContent>
         
-        <TabsContent value="teams">
-  <div className="teams-tab-container">
-    <TeamsTab 
-      leagueId={leagueKey.split('.').pop() || ''} 
-      leagueKey={leagueKey} 
-      key={`teams-tab-${leagueKey}`}
-    />
-  </div>
-</TabsContent>
+        <TabsContent value="teams" lazyLoad={true}>
+          <TeamsTab leagueId={leagueDetails.league_id} leagueKey={leagueDetails.league_key} />
+        </TabsContent>
         
         <TabsContent value="settings">
           <div className="space-y-6">
@@ -615,6 +606,12 @@ export default function YahooLeagueDetails({ leagueKey, onBack }: YahooLeagueDet
                 Some settings may not be available depending on the league configuration and Yahoo API limitations.
               </p>
             </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="schedule">
+          <div className="p-4 bg-gray-50 rounded-md">
+            <p className="text-gray-600">Schedule information is not available at this time.</p>
           </div>
         </TabsContent>
       </Tabs>

@@ -3,7 +3,7 @@
  * Uses the Yahoo Fantasy API service for real data
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { createYahooFantasyService } from '@/lib/services/yahooFantasyService'
+import { createYahooFantasyService } from '@/lib/services/yahooFantasyServices'
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,13 +29,36 @@ export async function GET(request: NextRequest) {
     // Create Yahoo Fantasy service for the user
     const yahooService = createYahooFantasyService(userId)
     
+    // Check if user has Yahoo tokens
+    const hasTokens = await yahooService.hasYahooTokens();
+    if (!hasTokens) {
+      console.error('No Yahoo tokens found for user:', userId);
+      return NextResponse.json({
+        error: 'You are not connected to Yahoo Fantasy. Please connect your account.',
+        details: 'No Yahoo tokens found in user profile'
+      }, { status: 401 });
+    }
+    
     // Get league details from Yahoo API
     const leagueDetails = await yahooService.getLeagueDetails(leagueKey)
+    
+    // Get teams separately to handle potential errors
+    try {
+      const teams = await yahooService.getLeagueTeams(leagueKey);
+      leagueDetails.teams = teams;
+    } catch (teamsError: any) {
+      console.error('Error fetching teams for league details:', teamsError);
+      // Continue without teams data
+      leagueDetails.teams = [];
+      
+      // Add a flag to indicate teams couldn't be loaded
+      leagueDetails.teams_error = teamsError.message || 'Failed to load teams';
+    }
     
     return NextResponse.json({ 
       league: leagueDetails
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in league details API:', error)
     
     // Provide specific error message for common issues
@@ -47,11 +70,26 @@ export async function GET(request: NextRequest) {
         }, { status: 401 })
       }
       
-      if (error.message.includes('Failed to refresh Yahoo tokens')) {
+      if (error.message.includes('Failed to refresh Yahoo tokens') || error.message.includes('invalid_grant')) {
         return NextResponse.json({
           error: 'Your Yahoo connection has expired. Please reconnect your account.',
           details: error.message
         }, { status: 401 })
+      }
+      
+      if (error.message.includes('400') || error.message.includes('Bad Request')) {
+        return NextResponse.json({
+          error: 'Unable to access this league. You may not have permission or the league key is invalid.',
+          details: error.message
+        }, { status: 400 });
+      }
+      
+      // Check for response property on error object (Axios error)
+      if ('response' in error && error.response && typeof error.response === 'object' && 'status' in error.response && error.response.status === 400) {
+        return NextResponse.json({
+          error: 'League not found or you do not have permission to access it.',
+          details: error.message
+        }, { status: 404 });
       }
       
       return NextResponse.json({

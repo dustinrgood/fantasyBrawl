@@ -72,6 +72,10 @@ export default function TeamsTab({ leagueId, leagueKey }: TeamsTabProps) {
             throw new Error('Your Yahoo connection has expired. Please reconnect your account.');
           } else if (errorData.error && errorData.error.includes('League not found')) {
             throw new Error('League not found. Please check the league key and try again.');
+          } else if (errorData.error && errorData.error.includes('Unable to access this league')) {
+            throw new Error('Unable to access this league. You may not have permission to view it.');
+          } else if (errorData.error && errorData.error.includes('permission')) {
+            throw new Error('You do not have permission to access this league.');
           } else {
             throw new Error(errorData.error || 'Failed to fetch teams');
           }

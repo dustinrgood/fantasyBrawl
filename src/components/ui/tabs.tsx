@@ -109,13 +109,23 @@ interface TabsContentProps {
   value: string
   className?: string
   children: React.ReactNode
+  lazyLoad?: boolean
 }
 
-export function TabsContent({ value, className, children, ...props }: TabsContentProps) {
+export function TabsContent({ value, className, children, lazyLoad = false, ...props }: TabsContentProps) {
   const { value: selectedValue } = useTabs()
   const isSelected = selectedValue === value
+  const [hasBeenSelected, setHasBeenSelected] = useState(isSelected)
   
-  console.debug(`TabsContent for "${value}" - isSelected: ${isSelected}, selectedValue: "${selectedValue}"`);
+  useEffect(() => {
+    if (isSelected && !hasBeenSelected) {
+      setHasBeenSelected(true)
+    }
+  }, [isSelected, hasBeenSelected])
+  
+  console.debug(`TabsContent for "${value}" - isSelected: ${isSelected}, hasBeenSelected: ${hasBeenSelected}, selectedValue: "${selectedValue}"`);
+  
+  const shouldRenderChildren = !lazyLoad || hasBeenSelected
   
   return (
     <div
@@ -128,7 +138,7 @@ export function TabsContent({ value, className, children, ...props }: TabsConten
       )}
       {...props}
     >
-      {children}
+      {shouldRenderChildren ? children : null}
     </div>
   )
 }

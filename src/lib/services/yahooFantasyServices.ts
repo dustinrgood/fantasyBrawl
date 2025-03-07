@@ -35,6 +35,7 @@ export interface YahooLeagueDetails extends YahooLeague {
   end_week: number
   playoff_start_week: number
   teams: YahooTeam[]
+  teams_error?: string
   settings: any // Detailed settings object
   standings?: any // League standings
   commissioner?: {
@@ -334,7 +335,7 @@ export class YahooFantasyService {
       
       // Use a batch request to get all the data we need
       const response = await this.client.get(
-        `/league/${leagueKey}/metadata,settings,standings?format=json`
+        `/league/${leagueKey}/metadata,settings?format=json`
       );
       
       console.debug('Received league metadata response');
@@ -346,85 +347,10 @@ export class YahooFantasyService {
       
       const leagueData = response.data.fantasy_content.league[0];
       const leagueSettings = response.data.fantasy_content.league[1].settings[0];
-      const standingsData = response.data.fantasy_content.league[1].standings?.[0]?.teams;
       
-      // Get commissioner info
-      let commissionerInfo = null;
-      try {
-        const commissionerTeamId = leagueSettings.commissioner_team_id;
-        
-        if (commissionerTeamId) {
-          const teamResponse = await this.client.get(
-            `/team/${leagueKey}.t.${commissionerTeamId}/metadata?format=json`
-          );
-          
-          const managerData = teamResponse.data.fantasy_content.team[0][0].managers[0].manager;
-          
-          if (managerData) {
-            commissionerInfo = {
-              name: managerData.nickname || 'Unknown',
-              email: managerData.email || null,
-              teamId: commissionerTeamId
-            };
-          }
-        }
-      } catch (error) {
-        console.error('Error getting commissioner info:', error);
-        // Continue without commissioner info
-      }
-      
-      // Get teams in the league
-      console.debug('Fetching teams for league:', leagueKey);
-      
-      const teamsResponse = await this.client.get(
-        `/league/${leagueKey}/teams?format=json`
-      );
-      
-      console.debug('Received teams response');
-      
-      if (!teamsResponse.data || !teamsResponse.data.fantasy_content || !teamsResponse.data.fantasy_content.league) {
-        console.error('Invalid teams response format from Yahoo API:', teamsResponse.data);
-        throw new Error('Invalid teams response format from Yahoo API');
-      }
-      
-      const teamsData = teamsResponse.data.fantasy_content.league[1].teams;
-      const teams: YahooTeam[] = [];
-      
-      console.debug(`Found ${teamsData?.count || 0} teams in response`);
-      
-      if (teamsData && teamsData.count > 0) {
-        for (let i = 0; i < teamsData.count; i++) {
-          try {
-            if (!teamsData[i]?.team?.[0]) {
-              console.debug(`Skipping team at index ${i} due to missing data`);
-              continue;
-            }
-            
-            const team = teamsData[i].team[0];
-            
-            const teamObj: YahooTeam = {
-              team_id: team.team_id,
-              team_key: team.team_key,
-              name: team.name,
-              manager_name: team[0]?.managers?.[0]?.manager?.nickname || 'Unknown Manager',
-              manager_email: team[0]?.managers?.[0]?.manager?.email,
-              logo: team.team_logos?.[0]?.team_logo?.url,
-              waiver_priority: team.waiver_priority,
-              standing: team.team_standings?.rank
-            };
-            
-            teams.push(teamObj);
-          } catch (teamError) {
-            console.error(`Error processing team at index ${i}:`, teamError);
-            // Continue with next team
-          }
-        }
-      }
-      
-      console.debug(`Successfully processed ${teams.length} teams`);
-      
-      // Merge data into a league details object
-      const leagueDetails: YahooLeagueDetails = {
+      // Create a basic league details object without teams first
+      // This allows us to return partial data if team fetching fails
+      const basicLeagueDetails: YahooLeagueDetails = {
         league_id: leagueData.league_id,
         league_key: leagueData.league_key,
         name: leagueData.name,
@@ -439,22 +365,141 @@ export class YahooFantasyService {
         start_week: parseInt(leagueSettings.start_week),
         end_week: parseInt(leagueSettings.end_week),
         playoff_start_week: parseInt(leagueSettings.playoff_start_week),
-        teams,
+        teams: [], // Empty array initially
         settings: leagueSettings,
-        commissioner: commissionerInfo ? {
-          name: commissionerInfo.name || 'Unknown',
-          email: commissionerInfo.email || undefined,
-          teamId: commissionerInfo.teamId || ''
-        } : undefined
+        commissioner: undefined, // We'll set this later if available
+        teams_error: undefined
       };
       
-      return leagueDetails;
-    } catch (error) {
+      // Get commissioner info - only if we have basic league details
+      try {
+        const commissionerTeamId = leagueSettings.commissioner_team_id;
+        
+        if (commissionerTeamId) {
+          console.debug(`Fetching commissioner info for team ID: ${commissionerTeamId}`);
+          
+          const teamResponse = await this.client.get(
+            `/team/${leagueKey}.t.${commissionerTeamId}/metadata?format=json`
+          );
+          
+          const managerData = teamResponse.data.fantasy_content.team[0][0].managers[0].manager;
+          
+          if (managerData) {
+            basicLeagueDetails.commissioner = {
+              name: managerData.nickname || 'Unknown',
+              email: managerData.email || undefined,
+              teamId: commissionerTeamId
+            };
+            console.debug(`Commissioner info found: ${basicLeagueDetails.commissioner.name}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error getting commissioner info:', error);
+        // Continue without commissioner info
+      }
+      
+      return basicLeagueDetails;
+    } catch (error: any) {
       console.error('Error getting Yahoo league details:', error);
       
       // Add more context to the error
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', JSON.stringify(error.response.data));
+        
+        if (error.response.status === 400) {
+          console.error('400 Bad Request error. This could be due to invalid league key or permission issues.');
+          throw new Error(`Failed to get league details for ${leagueKey}: Bad Request (400) - The league key may be invalid or you may not have permission to access this league.`);
+        }
+      }
+      
       if (error instanceof Error) {
         error.message = `Failed to get league details for ${leagueKey}: ${error.message}`;
+      }
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Get teams for a specific league
+   * This is separated from getLeagueDetails to allow for better error handling
+   */
+  async getLeagueTeams(leagueKey: string): Promise<YahooTeam[]> {
+    try {
+      console.debug(`Getting teams for league: ${leagueKey}`);
+      
+      // Get teams in the league - with enhanced error handling
+      const teamsResponse = await this.client.get(
+        `/league/${leagueKey}/teams?format=json`
+      );
+      
+      console.debug('Teams response status:', teamsResponse.status);
+      console.debug('Teams response headers:', JSON.stringify(teamsResponse.headers));
+      console.debug('Teams response first 1000 chars:', 
+        JSON.stringify(teamsResponse.data).substring(0, 1000));
+      
+      if (!teamsResponse.data || !teamsResponse.data.fantasy_content || !teamsResponse.data.fantasy_content.league) {
+        console.error('Invalid teams response format from Yahoo API:', teamsResponse.data);
+        throw new Error('Invalid teams response format from Yahoo API');
+      }
+      
+      const teamsData = teamsResponse.data.fantasy_content.league[1].teams;
+      const teams: YahooTeam[] = [];
+      
+      console.debug(`Found ${teamsData?.count || 0} teams in response`);
+      
+      if (teamsData && teamsData.count > 0) {
+        for (let i = 0; i < teamsData.count; i++) {
+          try {
+            if (!teamsData[i]?.team) {
+              console.debug(`Skipping team at index ${i} due to missing team data`);
+              continue;
+            }
+            
+            // Fix: Access team directly instead of team[0]
+            const team = teamsData[i].team;
+            const teamData = Array.isArray(team) ? team[0] : team;
+            
+            if (!teamData) {
+              console.debug(`Skipping team at index ${i} due to invalid team data structure`);
+              continue;
+            }
+            
+            console.debug(`Processing team ${i}: ${teamData.name || 'Unknown'}`);
+            
+            const teamObj: YahooTeam = {
+              team_id: teamData.team_id,
+              team_key: teamData.team_key,
+              name: teamData.name,
+              manager_name: teamData.managers?.[0]?.manager?.nickname || 'Unknown Manager',
+              manager_email: teamData.managers?.[0]?.manager?.email,
+              logo: teamData.team_logos?.[0]?.team_logo?.url,
+              waiver_priority: teamData.waiver_priority,
+              standing: teamData.team_standings?.rank
+            };
+            
+            teams.push(teamObj);
+          } catch (teamError) {
+            console.error(`Error processing team at index ${i}:`, teamError);
+            // Continue with next team
+          }
+        }
+      }
+      
+      console.debug(`Successfully processed ${teams.length} teams`);
+      return teams;
+      
+    } catch (error: any) {
+      console.error('Error fetching teams for league:', error);
+      
+      if (error.response) {
+        console.error('Teams request failed with status:', error.response.status);
+        console.error('Response data:', JSON.stringify(error.response.data));
+        
+        if (error.response.status === 400) {
+          throw new Error(`Failed to get teams for league ${leagueKey}: Bad Request (400) - The league key may be invalid or you may not have permission to access this league.`);
+        }
       }
       
       throw error;
