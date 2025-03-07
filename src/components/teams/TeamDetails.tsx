@@ -11,6 +11,18 @@ interface TeamDetailsProps {
 export default function TeamDetails({ team, leagueId }: TeamDetailsProps) {
   const [showFullRoster, setShowFullRoster] = useState(false);
 
+  // Handle case where team data is incomplete
+  if (!team || typeof team !== 'object') {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-4 rounded-md">
+          <h3 className="font-bold">Team Data Unavailable</h3>
+          <p>The team data could not be loaded properly.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Group players by position for better organization
   const groupedRoster = team.roster ? team.roster.reduce((acc: any, player: any) => {
     const position = player.selected_position;
@@ -40,8 +52,12 @@ export default function TeamDetails({ team, leagueId }: TeamDetailsProps) {
           {team.logo ? (
             <img 
               src={team.logo} 
-              alt={`${team.name} logo`} 
+              alt={`${team.name || 'Team'} logo`} 
               className="w-20 h-20 mr-4 rounded-full object-cover border border-gray-200"
+              onError={(e) => {
+                // Replace broken image with a fallback
+                (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2NjY2NjYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAgMjFWMTlDMjAgMTcuOTM5MSAxOS41Nzg2IDE2LjkyMTcgMTguODI4NCAxNi4xNzE2QzE4LjA3ODMgMTUuNDIxNCAxNy4wNjA5IDE1IDE2IDE1SDhDNi45MzkxIDE1IDUuOTIxNzIgMTUuNDIxNCA1LjE3MTU3IDE2LjE3MTZDNC40MjE0MyAxNi45MjE3IDQgMTcuOTM5MSA0IDE5VjIxIj48L3BhdGg+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ij48L2NpcmNsZT48L3N2Zz4=';
+              }}
             />
           ) : (
             <div className="w-20 h-20 mr-4 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 border border-indigo-200">
@@ -49,8 +65,8 @@ export default function TeamDetails({ team, leagueId }: TeamDetailsProps) {
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold">{team.name}</h1>
-            <p className="text-gray-600">Manager: {team.manager_name}</p>
+            <h1 className="text-2xl font-bold">{team.name || `Team ${team.team_id || ''}`}</h1>
+            <p className="text-gray-600">Manager: {team.manager_name || 'Unknown Manager'}</p>
             {team.manager_email && (
               <p className="text-gray-500 text-sm">{team.manager_email}</p>
             )}

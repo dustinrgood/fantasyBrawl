@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 import TeamDetails from '@/components/teams/TeamDetails';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
 
 export default function TeamDetailPage() {
   const params = useParams();
@@ -13,34 +13,47 @@ export default function TeamDetailPage() {
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [errorDetails, setErrorDetails] = useState('');
   const { user } = useAuth();
 
-  useEffect(() => {
-    async function fetchTeamDetails() {
-      try {
-        setLoading(true);
-        console.debug(`Fetching details for team: ${teamId} in league: ${leagueId}`);
-        
-        // Construct the Yahoo team key format
-        const teamKey = `${leagueId}.t.${teamId}`;
-        const response = await fetch(`/api/yahoo/team-details?teamKey=${teamKey}&userId=${user?.uid}`);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch team details');
-        }
-        
-        const data = await response.json();
-        console.debug('Received team details:', data.team);
-        setTeam(data.team);
-      } catch (err) {
-        console.error('Error fetching team details:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load team details. Please try again later.');
-      } finally {
-        setLoading(false);
+  const fetchTeamDetails = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      setErrorDetails('');
+      console.debug(`Fetching details for team: ${teamId} in league: ${leagueId}`);
+      
+      if (!user?.uid) {
+        throw new Error('You must be logged in to view team details');
       }
+      
+      // Construct the Yahoo team key format
+      const teamKey = `${leagueId}.t.${teamId}`;
+      const response = await fetch(`/api/yahoo/team-details?teamKey=${teamKey}&userId=${user.uid}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API error response:', errorData);
+        throw new Error(errorData.error || 'Failed to fetch team details');
+      }
+      
+      const data = await response.json();
+      console.debug('Received team details:', data.team);
+      setTeam(data.team);
+    } catch (err) {
+      console.error('Error fetching team details:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+        setErrorDetails(err.stack || '');
+      } else {
+        setError('Failed to load team details. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     if (leagueId && teamId && user?.uid) {
       fetchTeamDetails();
     } else {
@@ -52,6 +65,12 @@ export default function TeamDetailPage() {
       }
     }
   }, [leagueId, teamId, user?.uid]);
+
+  const handleRetry = () => {
+    if (!loading) {
+      fetchTeamDetails();
+    }
+  };
 
   if (loading) {
     return (
@@ -75,6 +94,31 @@ export default function TeamDetailPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg">
           <h2 className="text-xl font-bold mb-2">Error Loading Team</h2>
           <p>{error}</p>
+          
+          {errorDetails && (
+            <details className="mt-4">
+              <summary className="text-sm cursor-pointer">Show technical details</summary>
+              <pre className="mt-2 text-xs bg-red-100 p-3 rounded overflow-auto max-h-[200px]">
+                {errorDetails}
+              </pre>
+            </details>
+          )}
+          
+          <button 
+            onClick={handleRetry} 
+            className="mt-4 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md flex items-center w-fit"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Retrying...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" /> Try Again
+              </>
+            )}
+          </button>
         </div>
       </div>
     );

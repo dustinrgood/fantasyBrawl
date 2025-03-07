@@ -83,6 +83,21 @@ export default function TeamsTab({ leagueId, leagueKey }: TeamsTabProps) {
         
         const data = await response.json();
         console.debug(`Received ${data.teams?.length || 0} teams:`, data.teams);
+        
+        // Check for duplicate team keys
+        if (data.teams && data.teams.length > 0) {
+          const teamKeys = data.teams.map((team: any) => team.team_key);
+          const uniqueKeys = new Set(teamKeys);
+          
+          if (teamKeys.length !== uniqueKeys.size) {
+            console.warn('Duplicate team keys detected:', 
+              teamKeys.filter((key: string, index: number) => teamKeys.indexOf(key) !== index));
+          }
+          
+          // Log all team keys for debugging
+          console.debug('All team keys:', teamKeys);
+        }
+        
         setTeams(data.teams || []);
       } catch (err) {
         console.error('Error fetching teams:', err);
@@ -105,7 +120,11 @@ export default function TeamsTab({ leagueId, leagueKey }: TeamsTabProps) {
   // Force a re-fetch when the component becomes visible
   const handleRefresh = () => {
     if (!loading) {
-      setHasAttemptedFetch(false);
+      console.debug('Refreshing teams data');
+      setTeams([]); // Clear the teams array
+      setHasAttemptedFetch(false); // Reset the fetch flag to trigger a new fetch
+      setError(''); // Clear any previous errors
+      setErrorDetails(''); // Clear error details
     }
   };
 
@@ -181,14 +200,81 @@ export default function TeamsTab({ leagueId, leagueKey }: TeamsTabProps) {
           <span className="text-sm text-gray-500">{teams.length} teams</span>
           <button 
             onClick={handleRefresh} 
-            className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center"
+            className={`px-4 py-2 ${loading ? 'bg-gray-100 text-gray-500' : 'bg-indigo-500 hover:bg-indigo-600 text-white'} rounded-md flex items-center font-medium transition-colors`}
+            disabled={loading}
           >
-            <RefreshCw className="h-3 w-3 mr-1" /> Refresh
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" /> Refresh Teams
+              </>
+            )}
           </button>
         </div>
       </div>
       
-      {teams.length === 0 ? (
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium mb-1">Error loading teams</p>
+              <p className="text-sm">{error}</p>
+              
+              {(error.includes('connect your Yahoo') || error.includes('expired')) && (
+                <div className="mt-2">
+                  <p className="text-sm">
+                    {error.includes('connect your Yahoo') 
+                      ? 'You need to connect your Yahoo Fantasy account to view teams.'
+                      : 'Your Yahoo connection has expired. Please reconnect your account.'}
+                  </p>
+                  {yahooAuthUrl ? (
+                    <a 
+                      href={yahooAuthUrl} 
+                      className="mt-2 inline-flex items-center text-sm bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded"
+                    >
+                      Connect to Yahoo Fantasy <ExternalLink className="h-3 w-3 ml-1" />
+                    </a>
+                  ) : (
+                    <a 
+                      href="/profile" 
+                      className="mt-2 inline-flex items-center text-sm text-red-800 hover:text-red-900"
+                    >
+                      Go to Profile <ExternalLink className="h-3 w-3 ml-1" />
+                    </a>
+                  )}
+                </div>
+              )}
+              
+              {errorDetails && (
+                <details className="mt-2">
+                  <summary className="text-xs cursor-pointer">Show technical details</summary>
+                  <pre className="mt-1 text-xs bg-red-100 p-2 rounded overflow-auto max-h-[100px]">
+                    {errorDetails}
+                  </pre>
+                </details>
+              )}
+              
+              <button 
+                onClick={handleRefresh} 
+                className="mt-3 text-sm bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded flex items-center"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" /> Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {loading ? (
+        <div className="flex flex-col items-center justify-center p-8 min-h-[200px]">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mb-2" />
+          <p className="text-gray-600">Loading teams...</p>
+        </div>
+      ) : teams.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
           <p className="text-gray-600">No teams found in this league.</p>
           <button 
@@ -200,8 +286,12 @@ export default function TeamsTab({ leagueId, leagueKey }: TeamsTabProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {teams.map(team => (
-            <TeamCard key={team.team_key} team={team} leagueId={leagueId} />
+          {teams.map((team, index) => (
+            <TeamCard 
+              key={team.team_key || `team-${index}-${Math.random().toString(36).substring(2, 9)}`} 
+              team={team} 
+              leagueId={leagueId} 
+            />
           ))}
         </div>
       )}

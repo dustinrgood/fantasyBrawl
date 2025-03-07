@@ -9,8 +9,11 @@ interface TeamCardProps {
 }
 
 export default function TeamCard({ team, leagueId }: TeamCardProps) {
+  // Generate a fallback ID if team_id is missing
+  const teamId = team?.team_id || `unknown-${Math.random().toString(36).substring(2, 9)}`;
+  
   // Handle case where team data might be incomplete
-  if (!team || !team.team_id) {
+  if (!team || !team.team_key) {
     return (
       <div className="border rounded-lg p-4 bg-gray-50 border-gray-200">
         <div className="flex items-center mb-4">
@@ -27,7 +30,11 @@ export default function TeamCard({ team, leagueId }: TeamCardProps) {
   }
 
   // For team details page, we'll use the team_id from the team object
-  const teamDetailsUrl = `/teams/${leagueId}/${team.team_id}`;
+  const teamDetailsUrl = `/teams/${leagueId}/${teamId}`;
+  
+  // Format the team name and manager name for display
+  const displayName = team.name || `Team ${team.team_id}`;
+  const displayManager = team.manager_name || 'Unknown Manager';
 
   return (
     <Link href={teamDetailsUrl}>
@@ -36,7 +43,7 @@ export default function TeamCard({ team, leagueId }: TeamCardProps) {
           {team.logo ? (
             <img 
               src={team.logo} 
-              alt={`${team.name} logo`} 
+              alt={`${displayName} logo`} 
               className="w-12 h-12 mr-3 rounded-full object-cover border border-gray-200"
               onError={(e) => {
                 // Replace broken image with a fallback
@@ -49,13 +56,9 @@ export default function TeamCard({ team, leagueId }: TeamCardProps) {
             </div>
           )}
           <div>
-            <h3 className="font-bold text-lg">{team.name || 'Unnamed Team'}</h3>
+            <h3 className="font-bold text-lg">{displayName}</h3>
             <p className="text-sm text-gray-600">
-              {team.manager_name ? (
-                <>Manager: {team.manager_name}</>
-              ) : (
-                <>Unknown Manager</>
-              )}
+              Manager: {displayManager}
             </p>
           </div>
         </div>

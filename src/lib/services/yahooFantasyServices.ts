@@ -333,9 +333,12 @@ export class YahooFantasyService {
     try {
       console.debug(`Getting details for league: ${leagueKey}`);
       
+      // Add a cache-busting parameter to ensure we get fresh data
+      const cacheBuster = Date.now();
+      
       // Use a batch request to get all the data we need
       const response = await this.client.get(
-        `/league/${leagueKey}/metadata,settings?format=json`
+        `/league/${leagueKey}/metadata,settings?format=json&_=${cacheBuster}`
       );
       
       console.debug('Received league metadata response');
@@ -429,55 +432,169 @@ export class YahooFantasyService {
     try {
       console.debug(`Getting teams for league: ${leagueKey}`);
       
+      // Add a cache-busting parameter to ensure we get fresh data
+      const cacheBuster = Date.now();
+      
       // Get teams in the league - with enhanced error handling
       const teamsResponse = await this.client.get(
-        `/league/${leagueKey}/teams?format=json`
+        `/league/${leagueKey}/teams?format=json&_=${cacheBuster}`
       );
       
       console.debug('Teams response status:', teamsResponse.status);
-      console.debug('Teams response headers:', JSON.stringify(teamsResponse.headers));
-      console.debug('Teams response first 1000 chars:', 
-        JSON.stringify(teamsResponse.data).substring(0, 1000));
+      
+      // Log the raw response data for debugging
+      console.debug('Raw teams response data:', JSON.stringify(teamsResponse.data).substring(0, 5000));
       
       if (!teamsResponse.data || !teamsResponse.data.fantasy_content || !teamsResponse.data.fantasy_content.league) {
         console.error('Invalid teams response format from Yahoo API:', teamsResponse.data);
         throw new Error('Invalid teams response format from Yahoo API');
       }
       
+      // Log the league data structure
+      console.debug('League data structure:', 
+        JSON.stringify(teamsResponse.data.fantasy_content.league).substring(0, 5000));
+      
       const teamsData = teamsResponse.data.fantasy_content.league[1].teams;
+      
+      // Log the teams data structure
+      console.debug('Teams data structure:', JSON.stringify(teamsData).substring(0, 5000));
+      
       const teams: YahooTeam[] = [];
       
       console.debug(`Found ${teamsData?.count || 0} teams in response`);
       
       if (teamsData && teamsData.count > 0) {
+        // Track team keys to ensure uniqueness
+        const usedTeamKeys = new Set<string>();
+        
         for (let i = 0; i < teamsData.count; i++) {
           try {
-            if (!teamsData[i]?.team) {
-              console.debug(`Skipping team at index ${i} due to missing team data`);
+            if (!teamsData[i]) {
+              console.debug(`Skipping team at index ${i} due to missing data`);
               continue;
             }
             
-            // Fix: Access team directly instead of team[0]
-            const team = teamsData[i].team;
-            const teamData = Array.isArray(team) ? team[0] : team;
+            // Yahoo API returns team data in a specific format
+            // The team data is in an array where the first element is the team metadata
+            // and the second element contains additional team data
+            const teamEntry = teamsData[i].team;
             
-            if (!teamData) {
-              console.debug(`Skipping team at index ${i} due to invalid team data structure`);
+            if (!teamEntry) {
+              console.debug(`No team entry found at index ${i}`);
               continue;
             }
             
-            console.debug(`Processing team ${i}: ${teamData.name || 'Unknown'}`);
+            // Extract team data from the first element (array or object)
+            let teamData: any = null;
+            let teamId = '';
+            let teamKey = '';
+            let teamName = '';
             
+            // Handle different team data structures
+            if (Array.isArray(teamEntry)) {
+              // If teamEntry is an array, the first element contains the basic team data
+              teamData = teamEntry[0];
+              teamId = teamData.team_id;
+              teamKey = teamData.team_key;
+              teamName = teamData.name || teamData.n || ''; // Yahoo API sometimes uses 'n' for name
+            } else {
+              // If teamEntry is an object, extract data directly
+              teamData = teamEntry;
+              teamId = teamData.team_id;
+              teamKey = teamData.team_key;
+              teamName = teamData.name || teamData.n || ''; // Yahoo API sometimes uses 'n' for name
+            }
+            
+            console.debug(`Processing team ${i}: ID=${teamId}, Key=${teamKey}, Name=${teamName}`);
+            
+            // Generate a unique team key if missing or duplicate
+            if (!teamKey || usedTeamKeys.has(teamKey)) {
+              teamKey = `${leagueKey}.t.${i}-${Date.now()}`;
+              console.debug(`Generated unique team key for team at index ${i}: ${teamKey}`);
+            }
+            
+            usedTeamKeys.add(teamKey);
+            
+            // Extract manager information
+            let managerName = 'Unknown Manager';
+            let managerEmail = undefined;
+            
+            // Handle different manager data structures
+            if (teamData.managers) {
+              const managers = teamData.managers;
+              
+              // Try different ways to access manager data
+              if (Array.isArray(managers)) {
+                // If managers is an array of manager objects
+                if (managers.length > 0 && managers[0].manager) {
+                  const manager = managers[0].manager;
+                  managerName = manager.nickname || manager.name || 'Unknown Manager';
+                  managerEmail = manager.email;
+                  console.debug(`Found manager in array: ${managerName}`);
+                }
+              } else if (managers[0] && managers[0].manager) {
+                // If managers is an object with numbered properties
+                const manager = managers[0].manager;
+                managerName = manager.nickname || manager.name || 'Unknown Manager';
+                managerEmail = manager.email;
+                console.debug(`Found manager in object: ${managerName}`);
+              } else if (managers.manager) {
+                // If managers has a direct manager property
+                const manager = managers.manager;
+                managerName = manager.nickname || manager.name || 'Unknown Manager';
+                managerEmail = manager.email;
+                console.debug(`Found manager directly: ${managerName}`);
+              } else if (managers.count && managers.count > 0) {
+                // If managers has a count property (it's an object with numbered properties)
+                for (let j = 0; j < managers.count; j++) {
+                  if (managers[j] && managers[j].manager) {
+                    const manager = managers[j].manager;
+                    managerName = manager.nickname || manager.name || 'Unknown Manager';
+                    managerEmail = manager.email;
+                    console.debug(`Found manager at index ${j}: ${managerName}`);
+                    break; // Just use the first manager
+                  }
+                }
+              }
+            }
+            
+            console.debug(`Final manager name for team ${i}: ${managerName}`);
+            
+            // Extract team logo
+            let teamLogo = undefined;
+            
+            // Handle different team_logos data structures
+            if (teamData.team_logos) {
+              const logos = teamData.team_logos;
+              
+              if (Array.isArray(logos)) {
+                // If logos is an array of logo objects
+                if (logos.length > 0 && logos[0].team_logo) {
+                  teamLogo = logos[0].team_logo.url;
+                }
+              } else if (logos[0] && logos[0].team_logo) {
+                // If logos is an object with numbered properties
+                teamLogo = logos[0].team_logo.url;
+              } else if (logos.team_logo) {
+                // If logos has a direct team_logo property
+                teamLogo = logos.team_logo.url;
+              }
+            }
+            
+            // Create the team object
             const teamObj: YahooTeam = {
-              team_id: teamData.team_id,
-              team_key: teamData.team_key,
-              name: teamData.name,
-              manager_name: teamData.managers?.[0]?.manager?.nickname || 'Unknown Manager',
-              manager_email: teamData.managers?.[0]?.manager?.email,
-              logo: teamData.team_logos?.[0]?.team_logo?.url,
+              team_id: teamId || `${i}`,
+              team_key: teamKey,
+              name: teamName || `Team ${i + 1}`,
+              manager_name: managerName,
+              manager_email: managerEmail,
+              logo: teamLogo,
               waiver_priority: teamData.waiver_priority,
               standing: teamData.team_standings?.rank
             };
+            
+            // Log the final team object
+            console.debug(`Final team object for index ${i}:`, teamObj);
             
             teams.push(teamObj);
           } catch (teamError) {
@@ -548,76 +665,259 @@ export class YahooFantasyService {
     }
   }
 
-// Inside the YahooFantasyService class
-async getTeamDetails(teamKey: string): Promise<any> {
-  try {
-    // Use a batch request to get all the data we need
-    const response = await this.client.get(
-      `/team/${teamKey}/metadata,stats,standings,roster?format=json`
-    );
-    
-    const teamData = response.data.fantasy_content.team;
-    const team = teamData[0][0];
-    const teamStats = teamData[1].team_stats;
-    const teamStandings = teamData[1].team_standings;
-    let roster = null;
-    
-    // Extract roster if available
-    if (teamData[1].roster) {
-      roster = teamData[1].roster[0].players;
+  /**
+   * Get team details
+   */
+  async getTeamDetails(teamKey: string): Promise<any> {
+    try {
+      console.debug(`Getting details for team: ${teamKey}`);
+      
+      // Add a cache-busting parameter to ensure we get fresh data
+      const cacheBuster = Date.now();
+      
+      // Use a batch request to get all the data we need
+      const response = await this.client.get(
+        `/team/${teamKey}/metadata,stats,standings,roster?format=json&_=${cacheBuster}`
+      );
+      
+      console.debug('Received team details response');
+      
+      if (!response.data || !response.data.fantasy_content || !response.data.fantasy_content.team) {
+        console.error('Invalid response format from Yahoo API:', response.data);
+        throw new Error('Invalid response format from Yahoo API');
+      }
+      
+      // Log the response data for debugging
+      console.debug('Team details response data structure:', 
+        JSON.stringify(response.data.fantasy_content.team).substring(0, 5000));
+      
+      const teamData = response.data.fantasy_content.team;
+      
+      // Extract team metadata from the first element
+      let team: any = null;
+      
+      // Handle different team data structures
+      if (Array.isArray(teamData[0])) {
+        team = teamData[0][0];
+      } else {
+        team = teamData[0];
+      }
+      
+      if (!team) {
+        console.error('Team data not found in response');
+        throw new Error('Team data not found in response');
+      }
+      
+      console.debug('Team metadata:', JSON.stringify(team).substring(0, 1000));
+      
+      // Extract additional team data from the second element
+      let teamStats = null;
+      let teamStandings = null;
+      let roster = null;
+      
+      // Check if the second element exists
+      if (teamData[1]) {
+        // Extract team stats if available
+        if (teamData[1].team_stats) {
+          teamStats = teamData[1].team_stats;
+        }
+        
+        // Extract team standings if available
+        if (teamData[1].team_standings) {
+          teamStandings = teamData[1].team_standings;
+        }
+        
+        // Extract roster if available
+        if (teamData[1].roster) {
+          roster = teamData[1].roster[0]?.players;
+        }
+      }
+      
+      // Extract manager information
+      let managerName = 'Unknown Manager';
+      let managerEmail = undefined;
+      
+      // Handle different manager data structures
+      if (team.managers) {
+        const managers = team.managers;
+        
+        // Try different ways to access manager data
+        if (Array.isArray(managers)) {
+          // If managers is an array of manager objects
+          if (managers.length > 0 && managers[0].manager) {
+            const manager = managers[0].manager;
+            managerName = manager.nickname || manager.name || 'Unknown Manager';
+            managerEmail = manager.email;
+            console.debug(`Found manager in array: ${managerName}`);
+          }
+        } else if (managers[0] && managers[0].manager) {
+          // If managers is an object with numbered properties
+          const manager = managers[0].manager;
+          managerName = manager.nickname || manager.name || 'Unknown Manager';
+          managerEmail = manager.email;
+          console.debug(`Found manager in object: ${managerName}`);
+        } else if (managers.manager) {
+          // If managers has a direct manager property
+          const manager = managers.manager;
+          managerName = manager.nickname || manager.name || 'Unknown Manager';
+          managerEmail = manager.email;
+          console.debug(`Found manager directly: ${managerName}`);
+        } else if (managers.count && managers.count > 0) {
+          // If managers has a count property (it's an object with numbered properties)
+          for (let j = 0; j < managers.count; j++) {
+            if (managers[j] && managers[j].manager) {
+              const manager = managers[j].manager;
+              managerName = manager.nickname || manager.name || 'Unknown Manager';
+              managerEmail = manager.email;
+              console.debug(`Found manager at index ${j}: ${managerName}`);
+              break; // Just use the first manager
+            }
+          }
+        }
+      }
+      
+      // Extract team logo
+      let teamLogo = undefined;
+      
+      // Handle different team_logos data structures
+      if (team.team_logos) {
+        const logos = team.team_logos;
+        
+        if (Array.isArray(logos)) {
+          // If logos is an array of logo objects
+          if (logos.length > 0 && logos[0].team_logo) {
+            teamLogo = logos[0].team_logo.url;
+          }
+        } else if (logos[0] && logos[0].team_logo) {
+          // If logos is an object with numbered properties
+          teamLogo = logos[0].team_logo.url;
+        } else if (logos.team_logo) {
+          // If logos has a direct team_logo property
+          teamLogo = logos.team_logo.url;
+        }
+      }
+      
+      // Format the basic team data
+      const formattedTeam = {
+        team_id: team.team_id,
+        team_key: team.team_key,
+        name: team.name || team.n || `Team ${team.team_id}`,
+        manager_name: managerName,
+        manager_email: managerEmail,
+        logo: teamLogo,
+        
+        // Add standings info if available
+        standing: teamStandings?.rank,
+        record: teamStandings ? `${teamStandings.outcome_totals.wins}-${teamStandings.outcome_totals.losses}` : null,
+        points: teamStats?.total,
+        
+        // Add roster
+        roster: this.formatRoster(roster)
+      };
+      
+      console.debug('Formatted team data:', JSON.stringify(formattedTeam).substring(0, 1000));
+      
+      return formattedTeam;
+    } catch (error: any) {
+      console.error('Error getting Yahoo team details:', error);
+      
+      // Add more context to the error
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', JSON.stringify(error.response.data));
+        
+        if (error.response.status === 400) {
+          throw new Error(`Failed to get team details for ${teamKey}: Bad Request (400) - The team key may be invalid or you may not have permission to access this team.`);
+        }
+      }
+      
+      if (error instanceof Error) {
+        error.message = `Failed to get team details for ${teamKey}: ${error.message}`;
+      }
+      
+      throw error;
+    }
+  }
+
+  // Also add the formatRoster method inside the class
+  private formatRoster(rosterData: any): any[] {
+    if (!rosterData || !rosterData.count) {
+      return [];
     }
     
-    // Format the basic team data
-    const formattedTeam = {
-      team_id: team.team_id,
-      team_key: team.team_key,
-      name: team.name,
-      manager_name: team.managers?.[0]?.manager?.nickname || 'Unknown Manager',
-      manager_email: team.managers?.[0]?.manager?.email,
-      logo: team.team_logos?.[0]?.team_logo?.url,
-      
-      // Add standings info if available
-      standing: teamStandings?.rank,
-      record: teamStandings ? `${teamStandings.outcome_totals.wins}-${teamStandings.outcome_totals.losses}` : null,
-      points: teamStats?.total,
-      
-      // Add roster
-      roster: this.formatRoster(roster)
-    };
+    console.debug(`Formatting roster with ${rosterData.count} players`);
     
-    return formattedTeam;
-  } catch (error) {
-    console.error('Error getting Yahoo team details:', error);
-    throw error;
-  }
-}
-
-// Also add the formatRoster method inside the class
-private formatRoster(rosterData: any): any[] {
-  if (!rosterData || !rosterData.count) {
-    return [];
-  }
-  
-  const players = [];
-  
-  for (let i = 0; i < rosterData.count; i++) {
-    if (!rosterData[i]?.player) continue;
+    const players = [];
     
-    const player = rosterData[i].player[0];
+    for (let i = 0; i < rosterData.count; i++) {
+      try {
+        if (!rosterData[i]?.player) {
+          console.debug(`Skipping player at index ${i} due to missing data`);
+          continue;
+        }
+        
+        // Log the player data structure
+        console.debug(`Player data structure at index ${i}:`, 
+          JSON.stringify(rosterData[i].player).substring(0, 1000));
+        
+        // Handle different player data structures
+        const playerEntry = rosterData[i].player;
+        let playerData: any = null;
+        let selectedPosition = 'BN';
+        
+        if (Array.isArray(playerEntry)) {
+          // If playerEntry is an array, the first element contains the basic player data
+          playerData = playerEntry[0];
+          
+          // Extract selected position from the second element if available
+          if (playerEntry[1] && playerEntry[1].selected_position) {
+            selectedPosition = playerEntry[1].selected_position.position;
+          }
+        } else {
+          // If playerEntry is an object, extract data directly
+          playerData = playerEntry;
+          
+          // Try to extract selected position
+          if (playerEntry.selected_position) {
+            selectedPosition = playerEntry.selected_position.position;
+          }
+        }
+        
+        if (!playerData) {
+          console.debug(`Skipping player at index ${i} due to invalid data structure`);
+          continue;
+        }
+        
+        // Extract player name
+        let playerName = 'Unknown Player';
+        if (playerData.name) {
+          if (typeof playerData.name === 'string') {
+            playerName = playerData.name;
+          } else if (playerData.name.full) {
+            playerName = playerData.name.full;
+          } else if (playerData.name.first && playerData.name.last) {
+            playerName = `${playerData.name.first} ${playerData.name.last}`;
+          }
+        }
+        
+        players.push({
+          player_id: playerData.player_id,
+          player_key: playerData.player_key,
+          name: playerName,
+          position: playerData.display_position,
+          status: playerData.status || 'Active',
+          team: playerData.editorial_team_abbr || '',
+          selected_position: selectedPosition
+        });
+      } catch (error) {
+        console.error(`Error processing player at index ${i}:`, error);
+        // Continue with next player
+      }
+    }
     
-    players.push({
-      player_id: player.player_id,
-      player_key: player.player_key,
-      name: player.name.full,
-      position: player.display_position,
-      status: player.status || 'Active',
-      team: player.editorial_team_abbr || '',
-      selected_position: rosterData[i].player[1]?.selected_position?.position || 'BN'
-    });
+    console.debug(`Successfully processed ${players.length} players`);
+    return players;
   }
-  
-  return players;
-}
 
   /**
    * Search for public leagues
@@ -709,15 +1009,9 @@ private formatRoster(rosterData: any): any[] {
   }
 }
 
-
-
 /**
  * Create a Yahoo Fantasy Service instance for a user
  */
-
-
 export function createYahooFantasyService(userId: string): YahooFantasyService {
   return new YahooFantasyService(userId)
-  
-    
 }
