@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { Agent } from 'https'
 
 // Yahoo OAuth configuration
-const YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
+const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
 const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
 const REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL 
   ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/yahoo/callback`

@@ -35,6 +35,16 @@ export default function Navigation() {
               Dashboard
             </Link>
             <Link
+              href="/how-it-works"
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                isActive('/how-it-works')
+                  ? 'bg-white text-indigo-700'
+                  : 'text-white hover:bg-indigo-600 hover:text-white active:bg-indigo-800'
+              }`}
+            >
+              How It Works
+            </Link>
+            <Link
               href="/leagues/my"
               className={`px-4 py-2 rounded-lg font-medium transition-all ${
                 isActive('/leagues/my')
@@ -113,6 +123,16 @@ export default function Navigation() {
                 }`}
               >
                 Dashboard
+              </Link>
+              <Link
+                href="/how-it-works"
+                className={`px-4 py-3 rounded-lg font-medium transition-all ${
+                  isActive('/how-it-works')
+                    ? 'bg-white text-indigo-700'
+                    : 'text-white hover:bg-indigo-600 active:bg-indigo-800'
+                }`}
+              >
+                How It Works
               </Link>
               <Link
                 href="/leagues/my"

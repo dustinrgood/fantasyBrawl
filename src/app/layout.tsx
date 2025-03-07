@@ -13,8 +13,8 @@ const inter = Inter({
 })
 
 export const metadata = {
-  title: 'Fantasy League Challenge',
-  description: 'Challenge other fantasy leagues and compete for bragging rights',
+  title: 'LeagueBrawl - Where Fantasy Leagues Unite and Compete',
+  description: 'Take your fantasy sports to the next level with league vs league competition, trash talk, and epic prizes',
 }
 
 export default function RootLayout({

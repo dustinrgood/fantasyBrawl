@@ -67,7 +67,7 @@ export default function YahooDebugPage() {
     try {
       setRefreshing(true)
       
-      const response = await fetch('/api/auth/yahoo/refresh-tokens', {
+      const response = await fetch('/api/auth/yahoo/refresh-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

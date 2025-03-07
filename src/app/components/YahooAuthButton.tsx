@@ -32,7 +32,7 @@ export default function YahooAuthButton({
       }
       
       // Check if Yahoo client ID is configured
-      if (!process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID) {
+      if (!process.env.YAHOO_CLIENT_ID) {
         setError('Yahoo Client ID not configured')
         setIsLoading(false)
         return

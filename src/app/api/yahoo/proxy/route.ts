@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (isExpired) {
       console.log('Yahoo tokens are expired, refreshing...')
       // Refresh the tokens
-      const refreshUrl = new URL('/api/auth/yahoo/refresh-tokens', request.nextUrl.origin)
+      const refreshUrl = new URL('/api/auth/yahoo/refresh-token', request.nextUrl.origin)
       
       try {
         const refreshResponse = await axios.post(

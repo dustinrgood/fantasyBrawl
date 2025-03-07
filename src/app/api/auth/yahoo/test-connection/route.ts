@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Yahoo OAuth configuration
-const YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
+const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
 const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
-const NEXT_PUBLIC_YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
+const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL
 
 /**
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const checks = {
       serverClientId: !!YAHOO_CLIENT_ID,
       serverClientSecret: !!YAHOO_CLIENT_SECRET,
-      publicClientId: !!NEXT_PUBLIC_YAHOO_CLIENT_ID,
+      publicClientId: !!YAHOO_CLIENT_ID,
       appUrl: !!APP_URL,
       clientIdMatch: true,
     }

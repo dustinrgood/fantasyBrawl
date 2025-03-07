@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import TeamsTab from '@/components/teams/TeamsTab';
 import { useYahooFantasy } from '@/lib/hooks/useYahooFantasy'
 import { fetchLeagueDetails } from '@/lib/services/yahooFantasyClient'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -140,6 +141,10 @@ export default function YahooLeagueDetails({ leagueKey, onBack }: YahooLeagueDet
     fetchDetails()
   }, [leagueKey])
   
+  useEffect(() => {
+    console.debug('Active tab changed:', activeTab);
+  }, [activeTab]);
+  
   const toggleTeamExpand = (teamKey: string) => {
     if (expandedTeam === teamKey) {
       setExpandedTeam(null)
@@ -273,7 +278,15 @@ export default function YahooLeagueDetails({ leagueKey, onBack }: YahooLeagueDet
         )}
       </div>
       
-      <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+      <Tabs 
+        value={activeTab} 
+        defaultValue="overview" 
+        className="w-full" 
+        onValueChange={(value) => {
+          console.debug(`Tab changed to: ${value}`);
+          setActiveTab(value);
+        }}
+      >
         <TabsList className="mb-6">
           <TabsTrigger value="overview" className="flex items-center">
             <Info className="h-4 w-4 mr-1" />
@@ -473,121 +486,14 @@ export default function YahooLeagueDetails({ leagueKey, onBack }: YahooLeagueDet
         </TabsContent>
         
         <TabsContent value="teams">
-          {teams.length > 0 ? (
-            <div className="space-y-4">
-              {teams.map((team, index) => (
-                <div key={index} className="border rounded-lg overflow-hidden">
-                  <div 
-                    className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50"
-                    onClick={() => toggleTeamExpand(team.team_key)}
-                  >
-                    <div className="flex items-center">
-                      {team.team_logo && (
-                        <img src={team.team_logo} alt="Team Logo" className="h-10 w-10 mr-3 rounded-full" />
-                      )}
-                      <div>
-                        <h3 className="font-medium">{team.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          Rank: {team.team_standings.rank} • Record: {team.team_standings.outcome_totals.wins}-
-                          {team.team_standings.outcome_totals.losses}-
-                          {team.team_standings.outcome_totals.ties}
-                        </p>
-                      </div>
-                    </div>
-                    {expandedTeam === team.team_key ? (
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
-                  
-                  {expandedTeam === team.team_key && (
-                    <div className="p-4 bg-gray-50 border-t">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-2">Team Stats</h4>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Points For:</span>
-                              <span className="text-sm font-medium">
-                                {typeof team.team_standings.points_for === 'number' 
-                                  ? team.team_standings.points_for.toFixed(2) 
-                                  : team.team_standings.points_for}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Points Against:</span>
-                              <span className="text-sm font-medium">
-                                {typeof team.team_standings.points_against === 'number' 
-                                  ? team.team_standings.points_against.toFixed(2) 
-                                  : team.team_standings.points_against}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Win Percentage:</span>
-                              <span className="text-sm font-medium">{team.team_standings.outcome_totals.percentage}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Playoff Seed:</span>
-                              <span className="text-sm font-medium">{team.team_standings.playoff_seed}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-2">Team Activity</h4>
-                          <div className="space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Waiver Priority:</span>
-                              <span className="text-sm font-medium">{team.waiver_priority || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Moves Made:</span>
-                              <span className="text-sm font-medium">{team.number_of_moves || '0'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Trades Made:</span>
-                              <span className="text-sm font-medium">{team.number_of_trades || '0'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {team.managers && team.managers.length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="text-sm font-medium text-gray-500 mb-2">Managers</h4>
-                          <div className="space-y-2">
-                            {team.managers.map((manager: any, idx: number) => (
-                              <div key={idx} className="flex items-center">
-                                <Shield className="h-4 w-4 text-indigo-500 mr-2" />
-                                <span className="text-sm">{manager.nickname || manager.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {team.url && (
-                        <div className="mt-4">
-                          <a 
-                            href={team.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm text-indigo-600 hover:text-indigo-800"
-                          >
-                            View on Yahoo Fantasy
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600">No team data available.</p>
-          )}
-        </TabsContent>
+  <div className="teams-tab-container">
+    <TeamsTab 
+      leagueId={leagueKey.split('.').pop() || ''} 
+      leagueKey={leagueKey} 
+      key={`teams-tab-${leagueKey}`}
+    />
+  </div>
+</TabsContent>
         
         <TabsContent value="settings">
           <div className="space-y-6">

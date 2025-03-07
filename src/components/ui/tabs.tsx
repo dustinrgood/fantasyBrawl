@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 
 type TabsContextValue = {
@@ -38,6 +38,10 @@ export function Tabs({
   
   const currentValue = value !== undefined ? value : tabValue
   const handleValueChange = onValueChange !== undefined ? onValueChange : setTabValue
+  
+  useEffect(() => {
+    console.debug('Tabs component - current value:', currentValue);
+  }, [currentValue]);
   
   return (
     <TabsContext.Provider value={{ value: currentValue, onValueChange: handleValueChange }}>
@@ -77,6 +81,11 @@ export function TabsTrigger({ value, className, children, ...props }: TabsTrigge
   const { value: selectedValue, onValueChange } = useTabs()
   const isSelected = selectedValue === value
   
+  const handleClick = () => {
+    console.debug(`TabsTrigger clicked: ${value}, current selected: ${selectedValue}`);
+    onValueChange(value);
+  };
+  
   return (
     <button
       type="button"
@@ -88,7 +97,7 @@ export function TabsTrigger({ value, className, children, ...props }: TabsTrigge
         isSelected ? 'bg-white text-gray-900 shadow-sm' : 'hover:bg-gray-50',
         className
       )}
-      onClick={() => onValueChange(value)}
+      onClick={handleClick}
       {...props}
     >
       {children}
@@ -106,13 +115,17 @@ export function TabsContent({ value, className, children, ...props }: TabsConten
   const { value: selectedValue } = useTabs()
   const isSelected = selectedValue === value
   
-  if (!isSelected) return null
+  console.debug(`TabsContent for "${value}" - isSelected: ${isSelected}, selectedValue: "${selectedValue}"`);
   
   return (
     <div
       role="tabpanel"
       data-state={isSelected ? 'active' : 'inactive'}
-      className={cn('mt-2', className)}
+      className={cn(
+        'mt-2', 
+        isSelected ? 'block' : 'hidden',
+        className
+      )}
       {...props}
     >
       {children}

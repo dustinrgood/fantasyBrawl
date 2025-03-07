@@ -248,7 +248,7 @@ export default function YahooTokensPage() {
       }
 
       // Build the Yahoo authorization URL directly
-      const clientId = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
+      const clientId = process.env.YAHOO_CLIENT_ID
       if (!clientId) {
         throw new Error('Yahoo Client ID not configured')
       }

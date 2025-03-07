@@ -3,7 +3,7 @@ import { auth, db } from '../firebase/firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 
 // Yahoo OAuth configuration
-const YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
+const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
 const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
 const REDIRECT_URI = typeof window !== 'undefined' 
   ? `${window.location.origin}/api/auth/yahoo/callback`

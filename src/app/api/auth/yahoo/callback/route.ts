@@ -1,10 +1,23 @@
+/**
+ * API route to handle Yahoo OAuth callback
+ * Updated version that stores tokens in Firestore and redirects to success/error page
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
+import { Agent } from 'https'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase/firebase'
 
 // Yahoo OAuth configuration
 const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
 const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
-const YAHOO_REDIRECT_URI = process.env.YAHOO_REDIRECT_URI || 'https://localhost:3001/api/auth/yahoo/callback'
+const YAHOO_REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL 
+  ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/yahoo/callback`
+  : 'https://localhost:3001/api/auth/yahoo/callback'
+
+// Create custom HTTPS agent for development
+const isDev = process.env.NODE_ENV === 'development'
+const httpsAgent = isDev ? new Agent({ rejectUnauthorized: false }) : undefined
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,28 +30,49 @@ export async function GET(request: NextRequest) {
     // Check for errors in the callback
     if (error) {
       console.error(`Yahoo OAuth error: ${error}`)
-      return NextResponse.redirect(new URL('/leagues/yahoo-picker?error=auth_failed', request.url))
+      return NextResponse.redirect(new URL('/profile?error=yahoo_auth_failed', request.url))
     }
 
     // Validate required parameters
     if (!code) {
       console.error('Missing authorization code in callback')
-      return NextResponse.redirect(new URL('/leagues/yahoo-picker?error=missing_code', request.url))
+      return NextResponse.redirect(new URL('/profile?error=missing_code', request.url))
     }
 
     if (!state) {
       console.error('Missing state parameter in callback')
-      return NextResponse.redirect(new URL('/leagues/yahoo-picker?error=missing_state', request.url))
+      return NextResponse.redirect(new URL('/profile?error=missing_state', request.url))
     }
 
-    // In a real implementation, you would verify the state parameter
-    // against the one stored in your database or cache
-    console.log(`Received state: ${state}`)
-
+    // Get the state data from the cookie
+    const cookieStore = request.cookies
+    const stateDataCookie = cookieStore.get('yahoo_oauth_state')
+    
+    if (!stateDataCookie) {
+      console.error('Missing state data cookie')
+      return NextResponse.redirect(new URL('/profile?error=missing_state_cookie', request.url))
+    }
+    
+    let stateData: { state: string, userId: string }
+    try {
+      stateData = JSON.parse(stateDataCookie.value)
+    } catch (e) {
+      console.error('Invalid state data cookie:', e)
+      return NextResponse.redirect(new URL('/profile?error=invalid_state_cookie', request.url))
+    }
+    
+    // Verify state matches
+    if (state !== stateData.state) {
+      console.error('State mismatch - possible CSRF attack')
+      return NextResponse.redirect(new URL('/profile?error=state_mismatch', request.url))
+    }
+    
+    const userId = stateData.userId
+    
     // Check if Yahoo client credentials are configured
     if (!YAHOO_CLIENT_ID || !YAHOO_CLIENT_SECRET) {
       console.error('Yahoo client credentials not configured')
-      return NextResponse.redirect(new URL('/leagues/yahoo-picker?error=config_error', request.url))
+      return NextResponse.redirect(new URL('/profile?error=yahoo_config_error', request.url))
     }
 
     // Exchange the authorization code for tokens
@@ -57,37 +91,45 @@ export async function GET(request: NextRequest) {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
+        httpsAgent
       }
     )
 
     if (tokenResponse.status !== 200) {
       console.error('Failed to exchange code for tokens:', tokenResponse.status, tokenResponse.statusText)
-      return NextResponse.redirect(new URL('/leagues/yahoo-picker?error=token_error', request.url))
+      return NextResponse.redirect(new URL('/profile?error=token_exchange_failed', request.url))
     }
 
-    // Extract the tokens
+    // Extract the tokens in consistent camelCase format
     const tokenData = tokenResponse.data
     const tokens = {
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
-      expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresAt: Date.now() + tokenData.expires_in * 1000
     }
 
-    // In a real implementation, you would:
-    // 1. Extract the user ID from the state parameter or from the token
-    // 2. Store the tokens in your database for the user
-    console.log('Successfully obtained Yahoo tokens')
-
-    // For now, we'll redirect to a page where the user can manually store their tokens
-    const redirectUrl = new URL('/leagues/yahoo-picker?success=true', request.url)
+    // Store the tokens in Firestore
+    try {
+      const userRef = doc(db, 'users', userId)
+      await setDoc(userRef, {
+        yahooTokens: tokens,
+        yahooConnected: true,
+        yahooTokensUpdatedAt: new Date().toISOString()
+      }, { merge: true })
+      
+      console.log('Successfully stored Yahoo tokens for user:', userId)
+    } catch (dbError) {
+      console.error('Error storing tokens in Firestore:', dbError)
+      return NextResponse.redirect(new URL('/profile?error=token_storage_failed', request.url))
+    }
     
-    // In a real implementation, you would not pass tokens in the URL
-    // This is just for demonstration purposes
-    redirectUrl.searchParams.append('tokens', JSON.stringify(tokens))
+    // Clear the state cookie
+    const response = NextResponse.redirect(new URL('/profile?yahoo=connected', request.url))
+    response.cookies.delete('yahoo_oauth_state')
     
-    return NextResponse.redirect(redirectUrl)
+    return response
   } catch (error) {
     console.error('Error handling Yahoo OAuth callback:', error)
-    return NextResponse.redirect(new URL('/leagues/yahoo-picker?error=server_error', request.url))
+    return NextResponse.redirect(new URL('/profile?error=server_error', request.url))
   }
-} 
+}

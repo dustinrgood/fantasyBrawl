@@ -1,12 +1,18 @@
+/**
+ * API route to initiate Yahoo OAuth flow
+ * Consolidated version that handles auth URL generation and state management
+ */
 import { NextRequest, NextResponse } from 'next/server'
 
 // Yahoo OAuth configuration
-const YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
+const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
 const REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL 
   ? `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/yahoo/callback`
   : 'https://localhost:3001/api/auth/yahoo/callback'
 
-// Generate a random string for state parameter
+/**
+ * Generate a random string for the state parameter
+ */
 function generateRandomString(length: number) {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
@@ -93,8 +99,11 @@ export async function POST(request: NextRequest) {
     console.error('Error initiating Yahoo authorization:', error)
     
     return NextResponse.json(
-      { error: 'Failed to initiate Yahoo authorization' },
+      { 
+        error: 'Failed to initiate Yahoo authorization',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
-} 
+}

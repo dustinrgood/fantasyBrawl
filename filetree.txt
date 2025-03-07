@@ -1,0 +1,25 @@
+Folder PATH listing
+Volume serial number is 5AB8-E33B
+C:\USERS\DUSTI\TEMPLATE-2-1\SRC\APP\LEAGUES
+¦   page.tsx
+¦   
++---challenge
+¦   +---[id]
+¦           page.tsx
+¦           
++---my-leagues
+¦       page.tsx
+¦       
++---Public
+¦   ¦   layout.tsx
+¦   ¦   page.tsx
+¦   ¦   
+¦   +---[leagueId]
+¦           page.tsx
+¦           
++---yahoo-picker
+¦       page.tsx
+¦       
++---[leagueKey]
+        page.tsx
+        

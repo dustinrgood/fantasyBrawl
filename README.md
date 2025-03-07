@@ -7,6 +7,7 @@ This application includes a complete integration with Yahoo Fantasy Sports API:
 - League data retrieval
 - Comprehensive debugging tools
 - Step-by-step guide for users
+- View /docs/YAHOO_API_ROUTES.md for more details
 
 To use the Yahoo Fantasy integration:
 1. Set up your Yahoo Developer application at https://developer.yahoo.com/apps/
@@ -14,7 +15,7 @@ To use the Yahoo Fantasy integration:
    ```
    YAHOO_CLIENT_ID=your_client_id
    YAHOO_CLIENT_SECRET=your_client_secret
-   NEXT_PUBLIC_YAHOO_CLIENT_ID=your_client_id
+   YAHOO_CLIENT_ID=your_client_id
    NEXT_PUBLIC_APP_URL=https://localhost:3001
    ```
 3. Ensure you're running the app with HTTPS (default with `npm run dev`)

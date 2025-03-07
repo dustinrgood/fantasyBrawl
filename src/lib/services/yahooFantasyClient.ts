@@ -4,7 +4,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { getAuthToken } from '@/lib/hooks/useAuthToken'
 
 // Yahoo OAuth configuration
-const YAHOO_CLIENT_ID = process.env.NEXT_PUBLIC_YAHOO_CLIENT_ID
+const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID
 const YAHOO_CLIENT_SECRET = process.env.YAHOO_CLIENT_SECRET
 const REDIRECT_URI = typeof window !== 'undefined' 
   ? `${window.location.origin}/api/auth/yahoo/callback`
@@ -325,7 +325,7 @@ export const refreshYahooTokenIfNeeded = async (): Promise<YahooTokens | null> =
     }
     
     // Make the refresh token request to the correct endpoint
-    const response = await fetch('/api/auth/yahoo/refresh-tokens', {
+    const response = await fetch('/api/auth/yahoo/refresh-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -752,7 +752,14 @@ export const fetchLeagueDetails = async (leagueKey: string) => {
       
       // Process stat categories
       const processedStatCategories = {
-        stats: []
+        stats: [] as Array<{
+          stat_id: any;
+          name: any;
+          display_name: any;
+          sort_order: any;
+          position_type: any;
+          is_only_display_stat: any;
+        }>
       }
       
       if (statCategories.stats) {

@@ -9,11 +9,14 @@ export default function Home() {
       <div className="bg-indigo-600 text-white py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">Fantasy League Challenge</h1>
-            <p className="text-xl max-w-3xl mx-auto mb-8">Take your fantasy sports competition to the next level by challenging other leagues</p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">LeagueBrawl</h1>
+            <p className="text-xl max-w-3xl mx-auto mb-8">Where Fantasy Leagues Unite and Compete</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link href="/dashboard" className="inline-flex items-center justify-center px-4 py-2 bg-white text-indigo-600 hover:bg-gray-100 text-sm font-medium rounded-md shadow-sm">
                 Get Started
+              </Link>
+              <Link href="/how-it-works" className="inline-flex items-center justify-center px-4 py-2 border border-white text-white hover:bg-indigo-700 text-sm font-medium rounded-md shadow-sm">
+                How It Works
               </Link>
               <Link href="/lobby" className="inline-flex items-center justify-center px-4 py-2 border border-white text-white hover:bg-indigo-700 text-sm font-medium rounded-md shadow-sm">
                 Find Challenges
